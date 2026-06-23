@@ -1,0 +1,27 @@
+{
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true,
+        "**/__pycache__": true,
+        "**/.venv": true,
+        "**/uv.lock": true,
+        "**/pyproject.toml":true,
+        "**/.python-version": true,
+    },
+    "python.languageServer": "Pylance",
+    "python.defaultInterpreterPath": "${workspaceFolder}/server/.venv/bin/python",
+    "python.analysis.exclude": [
+        "**/.venv",
+        "**/__pycache__", "**/node_modules", "**/.*"
+    ],
+    "files.watcherExclude": {
+        "**/server/.venv" : true
+    },
+    "search.exclude": {
+        "**/server/.venv": true
+    },
+
+}

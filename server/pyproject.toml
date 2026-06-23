@@ -1,0 +1,13 @@
+[project]
+name = "server"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "alembic>=1.18.4",
+    "fastapi[standard]>=0.136.3",
+    "psycopg2>=2.9.12",
+    "pydantic>=2.13.4",
+    "sqlalchemy>=2.0.50",
+]
