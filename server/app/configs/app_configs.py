@@ -11,10 +11,11 @@ class AppConfigs(BaseSettings):
     database_url:str = "postgresql://postgres:root@localhost:5432/chatbot"
     jwt_secret_key:str = "some_random_ass_secret_key_Xdsfc78sbcn"
     jwt_algorithm:str = "HS256"
-    access_token_expire_minutes:int = 10
+    access_exp_mins:int = 10
+    refresh_exp_days:int = 30
 
     model_config = SettingsConfigDict(env_file=str(ENV_FILE))
 
 @lru_cache
-def getAppConfig():
+def getAppConfig()->AppConfigs:
     return AppConfigs()

@@ -11,7 +11,7 @@ class User(Base):
     password : Mapped[str] = mapped_column(String,nullable=False)
     is_active : Mapped[bool] = mapped_column(Boolean,default=True)
 
-    refresh_tokens: Mapped[list["RefreshToken"]] = relationship("RefreshToken", back_populates="user")
+    refresh_tokens: Mapped[list["RefreshToken"]] = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
 
 
     created_at : Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
@@ -26,7 +26,7 @@ class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     user: Mapped["User"] = relationship("User", back_populates="refresh_tokens")
 
     token: Mapped[str] = mapped_column(String, unique=True, nullable=False)
