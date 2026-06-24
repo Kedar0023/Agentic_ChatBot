@@ -23,4 +23,4 @@ async def root():
 
 @app.get("/health")
 async def health(access_token : Annotated[TokenPayload,Depends(authenticate_user)]):
-    return {"status": "ok"}
+    return {"status": "ok","user": access_token}

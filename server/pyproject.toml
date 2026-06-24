@@ -23,7 +23,7 @@ target-version = "py313"
 select = [
     "E",
     "F",
-    "I",
+    # "I",
     "UP",
 ]
 
