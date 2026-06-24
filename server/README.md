@@ -19,3 +19,7 @@ alembic revision --autogenerate -m "<your_migration_message>"
 ```bash
 alembic upgrade head
 ```
+
+
+uv run ruff check . --fix
+uv run ruff format .

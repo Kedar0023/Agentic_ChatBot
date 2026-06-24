@@ -1,7 +1,6 @@
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from sqlalchemy import engine_from_config, pool
 
 from alembic import context
 
@@ -18,11 +17,12 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-from app.database.db import Base # noqa
+from app.database.db import Base  # noqa
+
 target_metadata = Base.metadata
 
-from app.configs.app_configs import getAppConfig # noqa
-from app.models.user import *  
+from app.configs.app_configs import getAppConfig  # noqa
+from app.models.user import *
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -43,7 +43,7 @@ def run_migrations_offline() -> None:
 
     """
     app_config = getAppConfig()
-    url = config.get_main_option("sqlalchemy.url",default=app_config.database_url)
+    url = config.get_main_option("sqlalchemy.url", default=app_config.database_url)
 
     config.set_main_option("sqlalchemy.url", app_config.database_url)
 
@@ -75,9 +75,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

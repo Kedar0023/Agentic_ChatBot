@@ -13,3 +13,17 @@ dependencies = [
     "pyjwt>=2.13.0",
     "sqlalchemy>=2.0.50",
 ]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "I",
+    "UP",
+]
+

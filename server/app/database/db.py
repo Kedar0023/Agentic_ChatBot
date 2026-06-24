@@ -1,8 +1,11 @@
-from app.configs.app_configs import getAppConfig
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from sqlalchemy import create_engine
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
+
+from app.configs.app_configs import getAppConfig
 
 config = getAppConfig()
+
+
 class Base(DeclarativeBase):
     pass
 
@@ -14,6 +17,7 @@ SessionLocal = sessionmaker(
     autoflush=False,
     autocommit=False,
 )
+
 
 def get_db():
     db = SessionLocal()
