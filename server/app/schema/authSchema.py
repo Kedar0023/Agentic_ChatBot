@@ -1,6 +1,9 @@
+from enum import Enum
+
 from pydantic import BaseModel, Field, field_validator
 
 
+# --------------------------------------------------------------------------------
 class SignupRequest(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=6, max_length=100)
@@ -12,6 +15,16 @@ class SignupRequest(BaseModel):
             raise ValueError("Username cannot contain whitespace")
         return value
 
-
 class LoginRequest(SignupRequest):
     pass
+# --------------------------------------------------------------------------------
+class TokenType(Enum):
+    ACCESS = "access"
+    REFRESH = "refresh"
+
+class TokenPayload(BaseModel):
+    type: TokenType
+    exp: int
+    iat: int
+    sub: str
+    jti: str

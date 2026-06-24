@@ -1,7 +1,6 @@
 import hashlib
 import uuid
 from datetime import UTC, datetime, timedelta
-from enum import Enum
 from typing import Annotated
 
 import bcrypt
@@ -13,7 +12,7 @@ from sqlalchemy.orm import Session
 from app.configs.app_configs import getAppConfig
 from app.database.db import get_db
 from app.models.user import RefreshToken, User
-from app.schema.authSchema import LoginRequest, SignupRequest
+from app.schema.authSchema import LoginRequest, SignupRequest, TokenType
 
 # --------------------------------------------------------------------------------
 
@@ -21,11 +20,6 @@ AppConfig = getAppConfig()
 router = APIRouter(prefix="/auth")
 
 # --------------------------------------------------------------------------------
-
-
-class TokenType(Enum):
-    ACCESS = "access"
-    REFRESH = "refresh"
 
 
 def create_token(payload: dict, token_type: TokenType) -> str:
