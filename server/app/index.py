@@ -7,6 +7,7 @@ from fastapi.exception_handlers import RequestValidationError
 from app.configs.app_configs import getAppConfig
 from app.configs.custom_error import validation_exception_handler
 from app.routes.auth import router as auth_router
+from app.routes.chatmodel import router as chat_router
 from app.configs.middleware import authenticate_user
 
 app = FastAPI()
@@ -15,6 +16,7 @@ config = getAppConfig()
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 
 app.include_router(auth_router)
+app.include_router(chat_router)
 
 
 @app.get("/")
