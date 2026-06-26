@@ -2,7 +2,6 @@ from datetime import UTC, datetime
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
 from app.database.db import Base
 
 
@@ -18,6 +17,11 @@ class User(Base):
 
     refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
         "RefreshToken", back_populates="user", cascade="all, delete-orphan"
+    )
+    # pyrefly: ignore [unknown-name]
+    threads: Mapped[list["Thread"]] = relationship(  # noqa: F821
+        back_populates="user",
+        cascade="all, delete-orphan",
     )
 
     created_at: Mapped[datetime] = mapped_column(
