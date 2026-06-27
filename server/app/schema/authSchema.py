@@ -24,6 +24,7 @@ class TokenType(Enum):
 
 class TokenPayload(BaseModel):
     type: TokenType
+    username: str
     exp: int
     iat: int
     sub: str

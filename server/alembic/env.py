@@ -22,7 +22,8 @@ from app.database.db import Base  # noqa
 target_metadata = Base.metadata
 
 from app.configs.app_configs import getAppConfig  # noqa
-from app.models.user import *
+from app.models.user import *  # noqa
+from app.models.chats import *  # noqa
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

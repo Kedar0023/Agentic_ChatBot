@@ -108,8 +108,8 @@ async def login(
     if not pwd:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    # Build token payload — use "sub" (subject) as the canonical identity claim
-    payload = {"sub": user.username, "jti": str(uuid.uuid4())}
+    # Build token payload — sub holds the stable numeric user ID (RFC 7519 best practice)
+    payload = {"sub": str(user.id), "username": user.username, "jti": str(uuid.uuid4())}
 
     access_token = create_token(payload, TokenType.ACCESS)
     refresh_token = create_token(payload, TokenType.REFRESH)
@@ -145,7 +145,7 @@ async def login(
 @router.post("/refresh", status_code=200)
 async def token_refresh(req: Request, res: Response, db: Annotated[Session, Depends(get_db)]):
     # Extract token from cookie
-    refresh_token = req.cookies.get("refresh_token") 
+    refresh_token = req.cookies.get("refresh_token")
 
     if not refresh_token:
         raise HTTPException(status_code=401, detail="Refresh token not found")
@@ -166,11 +166,18 @@ async def token_refresh(req: Request, res: Response, db: Annotated[Session, Depe
     if payload.get("type") != TokenType.REFRESH.value:
         raise HTTPException(status_code=401, detail="Invalid token type")
 
-    username: str | None = payload.get("sub")  # sub === username
-    if not username:
+    user_id: str | None = payload.get("sub")  # sub holds the numeric user ID as a string
+    if not user_id:
         raise HTTPException(status_code=401, detail="Invalid token payload")
 
-    user: User | None = db.query(User).filter(User.username == username).first()
+    # Defensively handle legacy tokens where sub was set to the username instead of the user ID.
+    # NOTE  in prod remove this check
+    try:
+        user: User | None = db.query(User).filter(User.id == int(user_id)).first()
+    except ValueError:
+        # sub is not a numeric string — treat it as a username (backward-compat)
+        user = db.query(User).filter(User.username == user_id).first()
+
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
@@ -197,7 +204,7 @@ async def token_refresh(req: Request, res: Response, db: Annotated[Session, Depe
     # Refresh-token rotation — revoke old, issue new
     rf_record.is_revoked = True
 
-    new_payload = {"sub": username, "jti": str(uuid.uuid4())}
+    new_payload = {"sub": str(user.id), "username": user.username, "jti": str(uuid.uuid4())}
     new_access_token = create_token(new_payload, TokenType.ACCESS)
     new_refresh_token = create_token(new_payload, TokenType.REFRESH)
 
@@ -226,7 +233,6 @@ async def token_refresh(req: Request, res: Response, db: Annotated[Session, Depe
 
 @router.post("/logout", status_code=200)
 async def logout(req: Request, res: Response, db: Annotated[Session, Depends(get_db)]):
-    """Revoke the refresh token stored in the cookie and clear it."""
     refresh_token = req.cookies.get("refresh_token")
 
     if refresh_token:

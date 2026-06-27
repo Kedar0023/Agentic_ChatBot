@@ -8,7 +8,7 @@
         "**/__pycache__": true,
         "**/.venv": true,
         "**/uv.lock": true,
-        "**/pyproject.toml":true,
+        // "**/pyproject.toml":true,
         "**/.python-version": true,
     },
     "python.languageServer": "Pylance",

@@ -1,6 +1,7 @@
+import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, Enum as SQLEnum, Text
+from sqlalchemy import DateTime, ForeignKey, String, Enum as SQLEnum, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database.db import Base
 from enum import Enum
@@ -10,7 +11,7 @@ from enum import Enum
 class Thread(Base):
     __tablename__ = "threads"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
 
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
@@ -58,7 +59,8 @@ class Message(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
 
-    thread_id: Mapped[int] = mapped_column(
+    thread_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid,
         ForeignKey("threads.id", ondelete="CASCADE"),
         index=True,
         nullable=False,
