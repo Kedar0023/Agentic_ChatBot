@@ -51,6 +51,12 @@ class MessageRole(str, Enum):
     SYSTEM = "system"
 
 
+class MessageStatus(Enum):
+    STREAMING = "streaming"
+    COMPLETE = "complete"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
 # --------------------------------------------------------------------------------
 
 
@@ -76,6 +82,11 @@ class Message(Base):
     )
 
     content: Mapped[str] = mapped_column(Text)
+
+    status: Mapped[MessageStatus] = mapped_column(
+        SQLEnum(MessageStatus, name="message_status"),
+        nullable=False
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
