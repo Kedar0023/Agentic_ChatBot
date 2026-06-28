@@ -12,6 +12,7 @@ from fastapi import APIRouter, HTTPException
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain.chat_models import init_chat_model
 from sqlalchemy.orm import Session
+from app.models.chats import Message, MessageRole
 
 router = APIRouter(prefix="/chat")
 
@@ -21,14 +22,13 @@ ollama_model = init_chat_model(
     temperature=0.7,
 )
 
-
 class MessageEntry(BaseModel):
     role: Literal["human", "ai"]
     content: str
 
 
 class ChatRequest(BaseModel):
-    history: list[MessageEntry]
+    history: list[MessageEntry] | None = None
     prompt: str
 
 
@@ -89,25 +89,116 @@ async def create_thread(
         db.refresh(new_thread)
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail={
-            "message": "An unexpected error occurred during thread creation.",
-            "error": str(e.__cause__)
-        })
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "message": "An unexpected error occurred during thread creation.",
+                "error": str(e.__cause__),
+            },
+        )
 
     return {"thread_id": str(thread_id)}  # Let frontend redirect to /chat/{id}
 
+def to_lc_message(msg: Message):
+    if msg.role == MessageRole.USER:
+        return HumanMessage(content=msg.content)
+    return AIMessage(content=msg.content)
+
 
 # before this api user should have thread_id in url and auth token
-@router.post("/base", status_code=200)
+@router.post("/base/{thread_id}", status_code=200)
 async def chat_(
-    req: ChatRequest, access_token: Annotated[TokenPayload, Depends(authenticate_user)]
+    req: ChatRequest,
+    thread_id: str,
+    access_token: Annotated[TokenPayload, Depends(authenticate_user)],
+    db: Annotated[Session, Depends(get_db)],
 ):
-    # extract user id from token
-    # extarct thread id from url
-    # get thread from db
-    # get prompt from request
-    # generate response
-    # save prompt and response to thread
-    # return response
+    # checks ownership and existence of thread
+    thread = (
+        db.query(Thread)
+        .filter(Thread.id == thread_id, Thread.user_id == access_token.sub)
+        .first()
+    )
+    if not thread:
+        raise HTTPException(status_code=403, detail="Forbidden")
 
-    return {"message": "You have reached the base chat model."}
+    # get ordered history and convert to LangChain types
+    history = (
+        db.query(Message)
+        .filter(Message.thread_id == thread_id)
+        .order_by(Message.created_at)
+        .all()
+    )
+
+    lc_history = [to_lc_message(m) for m in history]
+
+    prompt = req.prompt
+
+    # invoke with full history + new message
+    res = ollama_model.invoke([*lc_history, HumanMessage(content=prompt)])
+
+    # build ORM messages
+    human_msg = Message(
+        thread_id=thread_id,
+        role=MessageRole.USER,
+        content=prompt,
+    )
+    ai_msg = Message(
+        thread_id=thread_id,
+        role=MessageRole.ASSISTANT,
+        content=res.content,
+    )
+
+    # update thread metadata on first message
+    if thread.title is None:
+        thread.title = prompt[:100]
+    if thread.llm_model is None:
+        thread.llm_model = 'qwen2.5:1.5b'
+
+    # save to db
+    try:
+        db.add(human_msg)
+        db.add(ai_msg)
+        db.commit()
+        db.refresh(human_msg)
+        db.refresh(ai_msg)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "message": "An unexpected error occurred during message creation.",
+                "error": str(e.__cause__),
+            },
+        )
+
+    return {
+        "message": res.content,
+        "message_id": str(ai_msg.id),
+        "thread_id": thread_id,
+    }
+
+
+@router.get("/base/get_messages/{thread_id}", status_code=200)
+async def get_messages(
+    thread_id: str,
+    access_token: Annotated[TokenPayload, Depends(authenticate_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    # checks ownership and existence of thread
+    thread = (
+        db.query(Thread)
+        .filter(Thread.id == thread_id, Thread.user_id == access_token.sub)
+        .first()
+    )
+    if not thread:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    messages = (
+        db.query(Message)
+        .filter(Message.thread_id == thread_id)
+        .order_by(Message.created_at)
+        .all()
+    )
+
+    return {"messages": messages}
