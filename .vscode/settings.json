@@ -10,6 +10,7 @@
         "**/uv.lock": true,
         // "**/pyproject.toml":true,
         "**/.python-version": true,
+        "**/__init__.py" : true
     },
     "python.languageServer": "Pylance",
     "python.defaultInterpreterPath": "${workspaceFolder}/server/.venv/bin/python",

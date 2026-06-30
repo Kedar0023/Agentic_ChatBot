@@ -29,3 +29,15 @@ class TokenPayload(BaseModel):
     iat: int
     sub: str
     jti: str
+
+
+class SignupResponse(BaseModel):
+    message: str
+    userId : str
+
+
+class LoginResponse(BaseModel):
+    message: str
+    userId : str
+    username: str
+    access_token: str
