@@ -7,6 +7,7 @@ from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.db import Base
+from app.models.document import Document
 
 
 # --------------------------------------------------------------------------------
@@ -35,6 +36,11 @@ class Thread(Base):
 
     llm_model: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
+    documents: Mapped[list["Document"]] = relationship(
+        back_populates="thread",
+        cascade="all, delete-orphan",
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )
@@ -53,7 +59,7 @@ class MessageRole(str, Enum):
     SYSTEM = "system"
 
 
-class MessageStatus(Enum):
+class MessageStatus(str, Enum):
     STREAMING = "streaming"
     COMPLETE = "complete"
     FAILED = "failed"
@@ -66,7 +72,7 @@ class MessageStatus(Enum):
 class Message(Base):
     __tablename__ = "messages"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
 
     thread_id: Mapped[uuid.UUID] = mapped_column(
         Uuid,
