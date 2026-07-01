@@ -1,12 +1,13 @@
-
-from datetime import UTC, datetime, timedelta
 import hashlib
+from datetime import UTC, datetime, timedelta
 
-from app.schema.authSchema import TokenType
-from app.configs.app_configs import getAppConfig
 from jwt import encode
 
+from app.core.app_configs import getAppConfig
+from app.schema.authSchema import TokenType
+
 AppConfig = getAppConfig()
+
 
 # --------------------------------------------------------------------------------
 def create_token(payload: dict, token_type: TokenType) -> str:
@@ -23,7 +24,9 @@ def create_token(payload: dict, token_type: TokenType) -> str:
     payload.update({"type": token_type.value, "exp": expire, "iat": now})
     return encode(payload, AppConfig.jwt_secret_key, algorithm=AppConfig.jwt_algorithm)
 
+
 # --------------------------------------------------------------------------------
+
 
 def hash_token(raw_token: str) -> str:
     return hashlib.sha256(raw_token.encode()).hexdigest()

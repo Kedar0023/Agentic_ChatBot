@@ -20,7 +20,7 @@ class UserRepo:
         return UserRepo.get_user_by_username(db, username) is not None
 
     @staticmethod
-    def create_user(db: Session,username: str,hashed_password: str) -> User:
+    def create_user(db: Session, username: str, hashed_password: str) -> User:
         user = User(
             username=username,
             password=hashed_password,

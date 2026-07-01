@@ -1,5 +1,5 @@
-from datetime import datetime, UTC, timedelta
 import uuid
+from datetime import UTC, datetime, timedelta
 
 import bcrypt
 from fastapi import HTTPException, Request, Response
@@ -7,12 +7,12 @@ from jwt import ExpiredSignatureError, InvalidTokenError, decode
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core.app_configs import getAppConfig
 from app.models.user import RefreshToken, User
-from app.schema.authSchema import LoginRequest, SignupRequest, TokenType
-from app.repositories.user_repo import UserRepo
 from app.repositories.refresh_token_repo import RefreshTokenRepo
+from app.repositories.user_repo import UserRepo
+from app.schema.authSchema import LoginRequest, SignupRequest, TokenType
 from app.utils.security import create_token, hash_token
-from app.configs.app_configs import getAppConfig
 
 AppConfig = getAppConfig()
 
@@ -186,14 +186,17 @@ async def token_refresher_controller(req: Request, res: Response, db: Session):
     new_refresh_token = create_token(new_payload, TokenType.REFRESH)
 
     RefreshTokenRepo.create(
-        db, user.id, hash_token(new_refresh_token), 
-        expires_at= datetime.now(UTC) + timedelta(days=AppConfig.refresh_exp_days)
+        db,
+        user.id,
+        hash_token(new_refresh_token),
+        expires_at=datetime.now(UTC) + timedelta(days=AppConfig.refresh_exp_days),
     )
     try:
         db.commit()
     except Exception:
         db.rollback()
-        raise HTTPException( status_code=500,
+        raise HTTPException(
+            status_code=500,
             detail="An unexpected error occurred while rotating the refresh token.",
         )
 
@@ -203,12 +206,12 @@ async def token_refresher_controller(req: Request, res: Response, db: Session):
         httponly=True,
         secure=True,
         samesite="strict",
-        max_age=AppConfig.refresh_exp_days * 24 * 60 * 60)
-    
+        max_age=AppConfig.refresh_exp_days * 24 * 60 * 60,
+    )
+
     return {
         "message": "Token refreshed successfully",
         "userId": str(user.id),
         "username": user.username,
         "access_token": new_access_token,
     }
-

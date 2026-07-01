@@ -1,10 +1,12 @@
 import uuid
 from datetime import UTC, datetime
-
-from sqlalchemy import DateTime, ForeignKey, String, Enum as SQLEnum, Text, Uuid
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from app.database.db import Base
 from enum import Enum
+
+from sqlalchemy import DateTime, ForeignKey, String, Text, Uuid
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.database.db import Base
 
 
 # --------------------------------------------------------------------------------
@@ -18,9 +20,9 @@ class Thread(Base):
         nullable=False,
         index=True,
     )
-    
+
     # pyrefly: ignore [unknown-name]
-    user: Mapped["User"] = relationship(  # noqa: F821
+    user: Mapped["User"] = relationship(  # noqa: F821 # type: ignore
         back_populates="threads",
     )
     messages: Mapped[list["Message"]] = relationship(
@@ -57,6 +59,7 @@ class MessageStatus(Enum):
     FAILED = "failed"
     CANCELLED = "cancelled"
 
+
 # --------------------------------------------------------------------------------
 
 
@@ -84,8 +87,7 @@ class Message(Base):
     content: Mapped[str] = mapped_column(Text)
 
     status: Mapped[MessageStatus] = mapped_column(
-        SQLEnum(MessageStatus, name="message_status"),
-        nullable=False
+        SQLEnum(MessageStatus, name="message_status"), nullable=False
     )
 
     created_at: Mapped[datetime] = mapped_column(

@@ -1,7 +1,9 @@
+import logging
 
 from fastapi.responses import JSONResponse
-import logging
+
 logger = logging.getLogger(__name__)
+
 
 # Basic custom error handler for validation errors
 async def validation_exception_handler(req, exc):

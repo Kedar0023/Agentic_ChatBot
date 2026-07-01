@@ -15,12 +15,16 @@ class SignupRequest(BaseModel):
             raise ValueError("Username cannot contain whitespace")
         return value
 
+
 class LoginRequest(SignupRequest):
     pass
+
+
 # --------------------------------------------------------------------------------
 class TokenType(Enum):
     ACCESS = "access"
     REFRESH = "refresh"
+
 
 class TokenPayload(BaseModel):
     type: TokenType
@@ -33,11 +37,11 @@ class TokenPayload(BaseModel):
 
 class SignupResponse(BaseModel):
     message: str
-    userId : str
+    userId: str
 
 
 class LoginResponse(BaseModel):
     message: str
-    userId : str
+    userId: str
     username: str
     access_token: str

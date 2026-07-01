@@ -21,7 +21,7 @@ from app.database.db import Base  # noqa
 
 target_metadata = Base.metadata
 
-from app.configs.app_configs import getAppConfig  # noqa
+from app.core.app_configs import getAppConfig  # noqa
 from app.models.user import *  # noqa
 from app.models.chats import *  # noqa
 
