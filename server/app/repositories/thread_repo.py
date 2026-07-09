@@ -3,6 +3,7 @@ import uuid
 from sqlalchemy.orm import Session
 
 from app.models.chats import Thread
+from app.models.document import Document, DocumentStatus
 
 
 class ThreadRepo:
@@ -36,3 +37,44 @@ class ThreadRepo:
             thread.title = title
         if thread.llm_model is None and llm_model is not None:
             thread.llm_model = llm_model
+
+
+class DocumentRepo:
+    """Repository encapsulating all Document database operations."""
+
+    @staticmethod
+    # therad_id filename , s3_key ,content_type , file_size_bytes ,status
+    def create(
+        db: Session,
+        thread_id: str,
+        filename: str,
+        s3_key: str,
+        content_type: str,
+        file_size_bytes: int,
+        status: DocumentStatus,
+    ) -> None:
+        document = Document(
+            thread_id=thread_id,
+            filename=filename,
+            s3_key=s3_key,
+            content_type=content_type,
+            file_size_bytes=file_size_bytes,
+            status=status,
+        )
+        db.add(document)
+        return document
+
+
+    @staticmethod
+    def get_by_id(db: Session, document_id: str) -> Document | None:
+        return db.query(Document).filter(Document.id == document_id).first()
+
+    @staticmethod
+    def get_by_id_and_thread(
+        db: Session, document_id: str, thread_id: str
+    ) -> Document | None:
+        return (
+            db.query(Document)
+            .filter(Document.id == document_id, Document.thread_id == thread_id)
+            .first()
+        )

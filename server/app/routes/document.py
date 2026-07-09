@@ -11,7 +11,7 @@ from app.database.db import get_db
 from app.schema.authSchema import TokenPayload
 from typing import Annotated
 from sqlalchemy.orm import Session
-from app.service import document
+from app.service import doc_upload_pipeline as document
 
 router = APIRouter(prefix="/chat/{thread_id}")
 
@@ -24,4 +24,15 @@ async def upload_document(
     db: Annotated[Session, Depends(get_db)],
     file: UploadFile = File(...),
 ):
+    # print(thread_id, access_token, db, file)
     return await document.upload_document_controller(thread_id, access_token, db, file)
+
+
+@router.get("/documents/{document_id}",status_code=200)
+async def get_document(
+    thread_id: str,
+    document_id: str,
+    access_token: Annotated[TokenPayload, Depends(authenticate_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    return await document.get_document_controller(thread_id, document_id, access_token, db)
