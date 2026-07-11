@@ -16,6 +16,9 @@ class AppConfigs(BaseSettings):
     access_exp_mins: int = 30
     refresh_exp_days: int = 5
 
+    chroma_persist_dir: str = "/home/kedar/me/Agentic AI/TheChatBot/.chroma_db"
+    chroma_collection_name: str = "docs_collection"
+
     model_config = SettingsConfigDict(env_file=str(ENV_FILE))
 
 

@@ -1,3 +1,5 @@
+# chromadb 
+.chroma_db
 # temp s3
 s3/
 # ----------------------

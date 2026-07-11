@@ -95,3 +95,6 @@ wheels/
 
 # Virtual environments
 .venv
+
+# ChromaDB local vector store
+.chromadb/

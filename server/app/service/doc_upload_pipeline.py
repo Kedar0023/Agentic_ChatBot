@@ -27,7 +27,6 @@ ALLOWED_CONTENT_TYPES = {
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",  # .docx
 }
 
-
 # ---------------------------------------------------------------------------
 #     Key layout:  s3/<user_id>/<thread_id>/<doc_id>/<original_filename>
 async def upload_document_controller(
@@ -118,11 +117,8 @@ async def upload_document_controller(
         },
     }
 
-
 # ---------------------------------------------------------------------------
-#     GET  /chat/{thread_id}/documents/{document_id}
 #     Returns the file from local S3 storage as a downloadable response.
-# ---------------------------------------------------------------------------
 async def get_document_controller(
     thread_id: str,
     document_id: str,
@@ -155,3 +151,123 @@ async def get_document_controller(
         media_type=document.content_type or "application/octet-stream",
         filename=document.filename,
     )
+
+
+# ---------------------------------------------------------------------------
+#     POST  /chat/{thread_id}/documents/{document_id}/process
+#     Loads the PDF, splits into chunks, embeds, and stores in vector DB.
+# ---------------------------------------------------------------------------
+async def process_document_controller(
+    thread_id: str,
+    document_id: str,
+    access_token: TokenPayload,
+    db: Session,
+):
+    from app.langchain.rag_workflow import RAGWorkflow
+    from app.vectorstores.chromadb import get_vector_store
+
+    user_id = int(access_token.sub)
+
+    # 1. Verify the thread belongs to this user
+    thread = ThreadRepo.get_by_id_and_user(db, thread_id, user_id)
+    if not thread:
+        raise HTTPException(status_code=403, detail="Thread not found or access denied.")
+
+    # 2. Fetch the document and ensure it belongs to this thread
+    doc = DocumentRepo.get_by_id_and_thread(db, document_id, thread_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found.")
+
+    # 3. Only allow processing PDFs
+    if doc.content_type != "application/pdf":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Only PDF documents can be processed. Got: {doc.content_type}",
+        )
+
+    # 4. Prevent re-processing already completed documents
+    if doc.status == DocumentStatus.COMPLETED:
+        raise HTTPException(
+            status_code=409,
+            detail="Document has already been processed.",
+        )
+
+    # 5. Resolve file on local disk
+    file_path = S3_ROOT / doc.s3_key
+    if not file_path.exists() or not file_path.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail="File not found in storage. It may have been deleted.",
+        )
+
+    # 6. Mark as PROCESSING
+    doc.status = DocumentStatus.PROCESSING
+    db.commit()
+    db.refresh(doc)
+
+    # 7. Run the ingestion pipeline (load → split → embed → store in ChromaDB)
+    try:
+        # Step A: Load the PDF into LangChain Document objects
+        pages = RAGWorkflow.load_pdf(str(file_path))
+
+        # Step B: Split pages into smaller chunks
+        chunks = RAGWorkflow.split_into_chunks(pages)
+
+        if not chunks:
+            raise ValueError("PDF produced zero chunks after splitting.")
+
+        # Step C: Generate embeddings for each chunk
+        embeddings = RAGWorkflow.embed_chunks(chunks)
+
+        # Step D: Prepare data for ChromaDB
+        doc_id_str = str(doc.id)
+        thread_id_str = str(doc.thread_id)
+
+        chunk_ids = [f"{doc_id_str}__chunk_{i}" for i in range(len(chunks))]
+        documents = [chunk.page_content for chunk in chunks]
+        metadatas = [
+            {
+                "document_id": doc_id_str,
+                "thread_id": thread_id_str,
+                "filename": doc.filename,
+                "page": chunk.metadata.get("page", 0),
+                "chunk_index": i,
+            }
+            for i, chunk in enumerate(chunks)
+        ]
+
+        # Step E: Store in ChromaDB vector store
+        vector_store = get_vector_store()
+        vector_store.add_documents(
+            ids=chunk_ids,
+            documents=documents,
+            embeddings=embeddings,
+            metadatas=metadatas,
+        )
+
+        total_chunks = len(chunks)
+
+    except Exception as e:
+        doc.status = DocumentStatus.FAILED
+        db.commit()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Document processing failed: {e}",
+        )
+
+    # 8. Mark as COMPLETED
+    doc.status = DocumentStatus.COMPLETED
+    db.commit()
+    db.refresh(doc)
+
+    return {
+        "message": "Document processed successfully.",
+        "document": {
+            "id": str(doc.id),
+            "thread_id": str(doc.thread_id),
+            "filename": doc.filename,
+            "status": doc.status.value,
+            "total_chunks": total_chunks,
+        },
+    }
+
