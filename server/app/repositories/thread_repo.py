@@ -64,15 +64,12 @@ class DocumentRepo:
         db.add(document)
         return document
 
-
     @staticmethod
     def get_by_id(db: Session, document_id: str) -> Document | None:
         return db.query(Document).filter(Document.id == document_id).first()
 
     @staticmethod
-    def get_by_id_and_thread(
-        db: Session, document_id: str, thread_id: str
-    ) -> Document | None:
+    def get_by_id_and_thread(db: Session, document_id: str, thread_id: str) -> Document | None:
         return (
             db.query(Document)
             .filter(Document.id == document_id, Document.thread_id == thread_id)

@@ -2,8 +2,8 @@ from datetime import UTC, datetime
 from enum import Enum
 from uuid import UUID, uuid4
 
+from sqlalchemy import DateTime, ForeignKey, String, Text, Uuid
 from sqlalchemy import Enum as SQLEnum
-from sqlalchemy import ForeignKey, String, Text, DateTime, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.db import Base

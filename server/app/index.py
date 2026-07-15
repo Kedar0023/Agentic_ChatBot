@@ -1,15 +1,12 @@
-from typing import Annotated
 
-from fastapi import Depends, FastAPI
+from fastapi import  FastAPI
 from fastapi.exception_handlers import RequestValidationError
 
 from app.core.app_configs import getAppConfig
 from app.core.exception_handler import validation_exception_handler
-from app.core.middleware import authenticate_user
 from app.routes.auth import router as auth_router
 from app.routes.chatmodel import router as chat_router
-from app.routes.document import router as document_router 
-from app.schema.authSchema import TokenPayload
+from app.routes.document import router as document_router
 
 app = FastAPI()
 config = getAppConfig()
@@ -18,13 +15,3 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.include_router(auth_router)
 app.include_router(chat_router)
 app.include_router(document_router)
-
-
-@app.get("/")
-async def root():
-    return {"database_url": config.database_url}
-
-
-@app.get("/health")
-async def health(access_token: Annotated[TokenPayload, Depends(authenticate_user)]):
-    return {"status": "ok"}

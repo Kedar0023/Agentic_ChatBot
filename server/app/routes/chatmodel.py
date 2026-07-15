@@ -59,7 +59,7 @@ async def chat_(
         req.prompt, thread_id, access_token, db
     )
     return StreamingResponse(
-        chat.generator(req.prompt, lc_history, ai_msg, db),
+        chat.generator(req.prompt, lc_history, ai_msg, db, thread_id),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

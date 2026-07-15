@@ -22,7 +22,9 @@ def create_token(payload: dict, token_type: TokenType) -> str:
         raise ValueError("Invalid token type")
 
     payload.update({"type": token_type.value, "exp": expire, "iat": now})
-    return encode(payload, AppConfig.jwt_secret_key, algorithm=AppConfig.jwt_algorithm)
+    return encode(
+        payload, AppConfig.jwt_secret_key.get_secret_value(), algorithm=AppConfig.jwt_algorithm
+    )
 
 
 # --------------------------------------------------------------------------------

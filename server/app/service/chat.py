@@ -1,11 +1,13 @@
+import json
 import uuid
 from collections.abc import AsyncGenerator
 
 from fastapi import HTTPException
+from langchain_core.messages import AIMessage, HumanMessage
 from sqlalchemy.orm import Session
 
 from app.langchain.chat_engine import ChatEngine
-from app.models.chats import MessageRole, MessageStatus
+from app.models.chats import Message, MessageRole, MessageStatus
 from app.repositories.message_repo import MessageRepo
 from app.repositories.thread_repo import ThreadRepo
 from app.schema.authSchema import TokenPayload
@@ -26,7 +28,7 @@ async def authless_chat_controller(history: list[dict], prompt: str) -> AsyncGen
             lc_history.append(ChatEngine.to_lc_message(role, entry["content"]))
 
     async for chunk in ChatEngine.stream(lc_history, prompt):
-        yield chunk
+        yield f"data: {json.dumps(chunk)}\n\n"
 
 
 # ---------------------------------------------------------------------------
@@ -127,15 +129,17 @@ async def authenticated_chat_controller_2(
 
 async def generator(
     prompt: str,
-    lc_history: list[ChatEngine.to_lc_message],
-    ai_msg: MessageRepo.create,
+    lc_history: list[HumanMessage | AIMessage],
+    ai_msg: Message,
     db: Session,
+    thread_id: str,
 ) -> AsyncGenerator[str]:
     # Stream the response
     full_response = ""
-    async for chunk in ChatEngine.stream(lc_history, prompt):
-        full_response += chunk
-        yield chunk
+    async for chunk in ChatEngine.stream(lc_history, prompt, thread_id):
+        if chunk["type"] == "ai":
+            full_response += chunk["content"]
+        yield f"data: {json.dumps(chunk)}\n\n"
 
     MessageRepo.update_message(ai_msg, MessageStatus.COMPLETE, content=full_response)
     try:

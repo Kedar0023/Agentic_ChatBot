@@ -1,4 +1,3 @@
-from app.models.document import DocumentStatus
 import uuid
 from pathlib import Path
 
@@ -7,9 +6,9 @@ from fastapi import HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
-from app.repositories.thread_repo import ThreadRepo, DocumentRepo
+from app.models.document import DocumentStatus
+from app.repositories.thread_repo import DocumentRepo, ThreadRepo
 from app.schema.authSchema import TokenPayload
-
 
 # Local S3 bucket root — mirrors the Cloudflare R2 key layout.
 # In production, swap this with boto3 / S3-compatible client calls.
@@ -26,6 +25,7 @@ ALLOWED_CONTENT_TYPES = {
     "text/csv",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",  # .docx
 }
+
 
 # ---------------------------------------------------------------------------
 #     Key layout:  s3/<user_id>/<thread_id>/<doc_id>/<original_filename>
@@ -116,6 +116,7 @@ async def upload_document_controller(
             "created_at": document.created_at.isoformat(),
         },
     }
+
 
 # ---------------------------------------------------------------------------
 #     Returns the file from local S3 storage as a downloadable response.
@@ -270,4 +271,3 @@ async def process_document_controller(
             "total_chunks": total_chunks,
         },
     }
-

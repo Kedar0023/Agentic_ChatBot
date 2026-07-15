@@ -145,7 +145,7 @@ async def token_refresher_controller(req: Request, res: Response, db: Session):
     try:
         payload = decode(
             refresh_token,
-            AppConfig.jwt_secret_key,
+            AppConfig.jwt_secret_key.get_secret_value(),
             algorithms=[AppConfig.jwt_algorithm],
         )
     except ExpiredSignatureError:

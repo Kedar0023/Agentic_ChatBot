@@ -15,7 +15,7 @@ config = getAppConfig()
 
 class ChromaVectorStore:
     def __init__(self):
-        db_path = Path(config.chroma_persist_dir).expanduser()
+        db_path = Path(config.chroma_persist_dir.get_secret_value()).expanduser()
         db_path.mkdir(parents=True, exist_ok=True)
 
         self.client = chromadb.PersistentClient(path=str(db_path))
@@ -62,6 +62,7 @@ class ChromaVectorStore:
             ids=ids,
             where=where,
         )
+
 
 @lru_cache
 def get_vector_store() -> ChromaVectorStore:

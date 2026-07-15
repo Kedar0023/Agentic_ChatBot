@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
-class VectorStore(ABC):
 
+class VectorStore(ABC):
     @abstractmethod
     def add_documents(self, documents):
         pass
