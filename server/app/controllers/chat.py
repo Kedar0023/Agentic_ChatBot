@@ -1,3 +1,4 @@
+import asyncio
 import json
 import uuid
 from collections.abc import AsyncGenerator
@@ -5,6 +6,7 @@ from collections.abc import AsyncGenerator
 from fastapi import HTTPException
 from langchain_core.messages import AIMessage, HumanMessage
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 
 from app.langchain.chat_engine import ChatEngine
 from app.models.chats import Message, MessageRole, MessageStatus
@@ -131,18 +133,38 @@ async def generator(
     prompt: str,
     lc_history: list[HumanMessage | AIMessage],
     ai_msg: Message,
-    db: Session,
+    async_db_session: async_sessionmaker[AsyncSession],
     thread_id: str,
 ) -> AsyncGenerator[str]:
-    # Stream the response
-    full_response = ""
-    async for chunk in ChatEngine.stream(lc_history, prompt, thread_id):
-        if chunk["type"] == "ai":
-            full_response += chunk["content"]
-        yield f"data: {json.dumps(chunk)}\n\n"
+    parts: list[str] = []
+    status = MessageStatus.COMPLETE
 
-    MessageRepo.update_message(ai_msg, MessageStatus.COMPLETE, content=full_response)
-    try:
-        db.commit()
-    except Exception:
-        db.rollback()
+    # Stream the response
+    try :
+        async for chunk in ChatEngine.stream(lc_history, prompt, thread_id):
+            if chunk["type"] == "ai":
+                parts.append(chunk["content"])
+            yield f"data: {json.dumps(chunk)}\n\n"
+
+    except asyncio.CancelledError:
+        status = MessageStatus.CANCELLED
+        raise
+    except Exception as e:
+        status = MessageStatus.FAILED
+        raise
+    
+    finally:
+        full_response = "".join(parts) 
+
+        async with async_db_session() as db:
+            try:
+                ai_msg = await db.merge(ai_msg)
+
+                MessageRepo.update_message(
+                    ai_msg,
+                    status,
+                    content=full_response,
+                )
+                await db.commit()
+            except Exception:
+                await db.rollback()

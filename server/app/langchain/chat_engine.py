@@ -69,7 +69,7 @@ class ChatEngine:
         history: list[HumanMessage | AIMessage], prompt: str, thread_id: str | None = None
     ):
         messages = ChatEngine.compose_chat_messages(history, prompt)
-        print(messages)
+        # print(messages)
         try:
             async for chunk, metadata in agent_executor.astream(
                 {"messages": messages},

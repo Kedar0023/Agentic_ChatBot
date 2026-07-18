@@ -3,9 +3,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 
 from app.core.middleware import authenticate_user
-from app.database.db import get_db
+from app.database.db import get_db , get_async_db_session
 from app.schema.authSchema import TokenPayload
 from app.schema.chatSchema import ChatRequest
 from app.controllers import chat
@@ -54,12 +55,15 @@ async def chat_(
     thread_id: str,
     access_token: Annotated[TokenPayload, Depends(authenticate_user)],
     db: Annotated[Session, Depends(get_db)],
+    async_db_session: Annotated[async_sessionmaker[AsyncSession],Depends(get_async_db_session)]
 ):
     lc_history, ai_msg = await chat.authenticated_chat_controller_2(
         req.prompt, thread_id, access_token, db
     )
+    db.expunge(ai_msg)  # detach — ai_msg must not stay bound to the sync session
+
     return StreamingResponse(
-        chat.generator(req.prompt, lc_history, ai_msg, db, thread_id),
+        chat.generator(req.prompt, lc_history, ai_msg, async_db_session, thread_id),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
