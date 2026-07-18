@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from app.core.middleware import authenticate_user
 from app.database.db import get_db
 from app.schema.authSchema import TokenPayload
-from app.service import doc_upload_pipeline as document
+from app.controllers import doc_upload_pipeline as document
 
 router = APIRouter(prefix="/chat/{thread_id}")
 
@@ -48,4 +48,4 @@ async def process_document(
     access_token: Annotated[TokenPayload, Depends(authenticate_user)],
     db: Annotated[Session, Depends(get_db)],
 ):
-    return await document.process_document_controller(thread_id, document_id, access_token, db)
+    return await document.ingest_document(thread_id, document_id, access_token, db)

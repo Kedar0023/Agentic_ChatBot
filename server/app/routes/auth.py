@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.database.db import get_db
 from app.schema.authSchema import LoginRequest, LoginResponse, SignupRequest, SignupResponse
-from app.service import auth
+from app.controllers import auth
 
 router = APIRouter(prefix="/auth")
 

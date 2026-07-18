@@ -8,7 +8,7 @@ from app.core.middleware import authenticate_user
 from app.database.db import get_db
 from app.schema.authSchema import TokenPayload
 from app.schema.chatSchema import ChatRequest
-from app.service import chat
+from app.controllers import chat
 
 router = APIRouter(prefix="/chat")
 

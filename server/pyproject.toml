@@ -8,6 +8,7 @@ dependencies = [
     "aiofiles>=25.1.0",
     "alembic>=1.18.4",
     "bcrypt>=5.0.0",
+    "boto3>=1.43.50",
     "chromadb>=1.5.9",
     "ddgs>=9.14.4",
     "fastapi[standard]>=0.136.3",
@@ -22,12 +23,13 @@ dependencies = [
     "pydantic>=2.13.4",
     "pyjwt>=2.13.0",
     "pypdf>=6.14.2",
+    "python-multipart>=0.0.32",
     "sentence-transformers>=5.6.0",
     "sqlalchemy>=2.0.50",
 ]
 
 [tool.ruff]
-line-length = 100
+line-length = 120
 target-version = "py313"
 
 
@@ -39,3 +41,8 @@ select = [
     "UP",
 ]
 ignore = ["E302", "E303", "E305"]
+
+[dependency-groups]
+dev = [
+    "boto3-stubs[s3]>=1.43.50",
+]

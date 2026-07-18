@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from tempfile import NamedTemporaryFile
 from chromadb import QueryResult
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.documents import Document
@@ -26,10 +27,16 @@ class RAGWorkflow:
         return len(results["documents"]) > 0
 
     # ---------------------------------------------------------------------------------------
+    # this fn loads bytes form r2 + construct a temp file & further workflow
+    # The temporary file is automatically deleted after loading.
     @staticmethod
-    def load_pdf(pdf_path: str):
-        loader = PyPDFLoader(pdf_path)
-        return loader.load()
+    def load_pdf_from_bytes(steam: bytes) -> list[Document]:
+        with NamedTemporaryFile(suffix=".pdf", delete=True) as temp_file:
+            temp_file.write(steam)
+            temp_file.flush()
+
+            loader = PyPDFLoader(temp_file.name)
+            return loader.load()
 
     @staticmethod
     def split_into_chunks(documents: list[Document]) -> list[Document]:

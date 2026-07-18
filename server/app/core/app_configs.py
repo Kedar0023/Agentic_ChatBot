@@ -20,6 +20,13 @@ class AppConfigs(BaseSettings):
     chroma_persist_dir: SecretStr
     chroma_collection_name: str = "docs_collection"
 
+    cloudflare_account_id: SecretStr
+    cloudflare_access_key_id: SecretStr
+    cloudflare_secret_access_key: SecretStr
+    cloudflare_bucket_name: SecretStr
+
+
+
     model_config = SettingsConfigDict(env_file=str(ENV_FILE))
 
 
