@@ -1,8 +1,6 @@
-import logging
-
 from fastapi.responses import JSONResponse
 
-logger = logging.getLogger(__name__)
+from app.core.logging import logger
 
 
 # Basic custom error handler for validation errors

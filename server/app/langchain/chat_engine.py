@@ -1,5 +1,3 @@
-import logging
-
 from langchain.agents import create_agent
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import (
@@ -11,10 +9,10 @@ from langchain_core.messages import (
 )
 from app.schema.chatSchema import Context
 
+from app.core.logging import logger
 from app.langchain.tools import get_tools
 from app.utils.prompts import SYSTEM_PROMPT
 
-logger = logging.getLogger(__name__)
 ollama_model = init_chat_model(model="qwen3:4b", model_provider="ollama", temperature=0.0)
 
 agent_executor = create_agent(

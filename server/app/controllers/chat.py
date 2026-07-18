@@ -6,6 +6,7 @@ from collections.abc import AsyncGenerator
 from fastapi import HTTPException
 from langchain_core.messages import AIMessage, HumanMessage
 from sqlalchemy.orm import Session
+from app.core.logging import logger
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 
 from app.langchain.chat_engine import ChatEngine
@@ -47,6 +48,7 @@ async def create_chat_thread_controller(access_token: TokenPayload, db: Session)
         db.refresh(new_thread)
     except Exception as e:
         db.rollback()
+        logger.error("Thread creation failed user_id=%s", user_id, exc_info=True)
         raise HTTPException(
             status_code=500,
             detail={
@@ -55,6 +57,7 @@ async def create_chat_thread_controller(access_token: TokenPayload, db: Session)
             },
         )
 
+    logger.info("Thread created thread_id=%s user_id=%s", thread_id, user_id)
     return {"thread_id": str(thread_id)}
 
 
@@ -140,6 +143,7 @@ async def generator(
     status = MessageStatus.COMPLETE
 
     # Stream the response
+    logger.info("Stream started thread_id=%s", thread_id)
     try :
         async for chunk in ChatEngine.stream(lc_history, prompt, thread_id):
             if chunk["type"] == "ai":
@@ -148,9 +152,11 @@ async def generator(
 
     except asyncio.CancelledError:
         status = MessageStatus.CANCELLED
+        logger.info("Stream cancelled thread_id=%s", thread_id)
         raise
-    except Exception as e:
+    except Exception:
         status = MessageStatus.FAILED
+        logger.error("Stream failed thread_id=%s", thread_id, exc_info=True)
         raise
     
     finally:
@@ -168,3 +174,4 @@ async def generator(
                 await db.commit()
             except Exception:
                 await db.rollback()
+                logger.error("Failed to persist AI message msg_id=%s", ai_msg.id, exc_info=True)

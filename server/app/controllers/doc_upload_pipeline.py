@@ -6,6 +6,7 @@ from fastapi import HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
+from app.core.logging import logger
 from app.models.document import DocumentStatus
 from app.repositories.thread_repo import DocumentRepo, ThreadRepo
 from app.schema.authSchema import TokenPayload
@@ -76,6 +77,7 @@ async def upload_document_controller(
             content_type=content_type,
         )
     except RuntimeError:
+        logger.error("R2 upload failed key=%s", s3_key, exc_info=True)
         raise HTTPException(
             status_code=500,
             detail="Failed to upload file.",
@@ -96,12 +98,14 @@ async def upload_document_controller(
         db.refresh(document)
     except Exception:
         db.rollback()
+        logger.error("DB commit failed for doc upload — cleaning up R2 key=%s", s3_key, exc_info=True)
         delete_file(key=s3_key)              # Clean up the written file on DB failure
         raise HTTPException(
             status_code=500,
             detail="Failed to save document record. Please try again.",
         )
 
+    logger.info("Document uploaded doc_id=%s file=%s user_id=%s", doc_id, file.filename, user_id)
     return {
         "message": "Document uploaded successfully.",
     }
@@ -180,6 +184,7 @@ async def ingest_document(
     db.refresh(doc)
 
     #  ingestion pipeline (load → split → embed → store in ChromaDB)
+    logger.info("Ingestion started doc_id=%s file=%s", document_id, doc.filename)
     try:
         pages = RAGWorkflow.load_pdf_from_bytes(res["Body"].read())
         chunks = RAGWorkflow.split_into_chunks(pages)
@@ -218,6 +223,7 @@ async def ingest_document(
     except Exception as e:
         doc.status = DocumentStatus.FAILED
         db.commit()
+        logger.error("Ingestion failed doc_id=%s", document_id, exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=f"Document processing failed: {e}",
@@ -226,6 +232,7 @@ async def ingest_document(
     # Mark as COMPLETED
     doc.status = DocumentStatus.COMPLETED
     db.commit()
+    logger.info("Ingestion complete doc_id=%s chunks=%d", document_id, total_chunks)
     db.refresh(doc)
 
     return {

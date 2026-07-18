@@ -1,10 +1,9 @@
-import logging
 from botocore.exceptions import ClientError
 
 from app.core.cloudflare_r2_config import get_r2_client
 from app.core.app_configs import getAppConfig
+from app.core.logging import logger
 
-logger = logging.getLogger(__name__)
 settings = getAppConfig()
 client = get_r2_client()
 

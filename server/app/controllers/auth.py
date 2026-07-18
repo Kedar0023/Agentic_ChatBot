@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.app_configs import getAppConfig
+from app.core.logging import logger
 from app.models.user import RefreshToken, User
 from app.repositories.refresh_token_repo import RefreshTokenRepo
 from app.repositories.user_repo import UserRepo
@@ -38,12 +39,15 @@ async def register_controller(req: SignupRequest, db: Session):
         db.rollback()
         if isinstance(e, IntegrityError):
             # Guard against race-condition duplicate inserts
+            logger.warning("Registration integrity conflict for user=%s", req.username)
             raise HTTPException(
                 status_code=400, detail="Username already exists or invalid data provided."
             )
+        logger.error("Registration failed for user=%s", req.username, exc_info=True)
         raise HTTPException(
             status_code=500, detail="An unexpected error occurred during registration."
         )
+    logger.info("User registered user_id=%s", user.id)
     return {"message": "User registered successfully", "userId": str(user.id)}
 
 
@@ -54,11 +58,13 @@ async def login_controller(req: LoginRequest, res: Response, db: Session):
     # Verify user exists
     user: User | None = UserRepo.get_user_by_username(db, req.username)
     if not user:
+        logger.warning("Login failed — unknown user=%s", req.username)
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     # Verify password
     pwd: bool = bcrypt.checkpw(req.password.encode("utf-8"), user.password.encode("utf-8"))
     if not pwd:
+        logger.warning("Login failed — bad password user=%s", req.username)
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     # Build token payload
@@ -82,10 +88,13 @@ async def login_controller(req: LoginRequest, res: Response, db: Session):
         db.commit()
     except Exception:
         db.rollback()
+        logger.error("Failed to store refresh token for user_id=%s", user.id, exc_info=True)
         raise HTTPException(
             status_code=500,
             detail="An unexpected error occurred while storing the refresh token.",
         )
+
+    logger.info("User logged in user_id=%s", user.id)
 
     # Set refresh token in cookie
     res.set_cookie(
@@ -130,6 +139,7 @@ async def logout_controller(req: Request, res: Response, db: Session):
         )
 
     res.delete_cookie(key="refresh_token", httponly=True, secure=True, samesite="strict")
+    logger.info("User logged out user_id=%s", rf_record.user_id)
     return {"message": "User logged out successfully"}
 
 
@@ -180,6 +190,7 @@ async def token_refresher_controller(req: Request, res: Response, db: Session):
 
     # Refresh-token rotation — revoke old, issue new
     rf_record.is_revoked = True
+    logger.info("Token rotation for user_id=%s", user.id)
 
     new_payload = {"sub": str(user.id), "username": user.username, "jti": str(uuid.uuid4())}
     new_access_token = create_token(new_payload, TokenType.ACCESS)
