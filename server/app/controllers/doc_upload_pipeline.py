@@ -11,7 +11,7 @@ from app.models.document import DocumentStatus
 from app.repositories.thread_repo import DocumentRepo, ThreadRepo
 from app.schema.authSchema import TokenPayload
 from app.langchain.rag_workflow import RAGWorkflow
-from app.vectorstores.chromadb import get_vector_store
+from app.vectorstores.pinecone import get_vector_store
 
 # ---------------------------------------------------------------------------
 S3_ROOT = Path(__file__).resolve().parent.parent.parent.parent / "s3"

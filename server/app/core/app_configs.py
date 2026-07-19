@@ -25,6 +25,11 @@ class AppConfigs(BaseSettings):
     cloudflare_secret_access_key: SecretStr
     cloudflare_bucket_name: SecretStr
 
+    pinecone_api_key: SecretStr
+    pinecone_index: SecretStr
+
+    voyageai_api_key: SecretStr
+
 
 
     model_config = SettingsConfigDict(env_file=str(ENV_FILE))

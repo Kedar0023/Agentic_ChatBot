@@ -18,6 +18,7 @@ dependencies = [
     "langchain-huggingface>=1.2.2",
     "langchain-ollama>=1.1.0",
     "langchain-text-splitters>=1.1.2",
+    "langchain-voyageai>=0.4.0",
     "langgraph>=1.2.6",
     "pinecone>=9.1.0",
     "psycopg2>=2.9.12",
@@ -27,6 +28,7 @@ dependencies = [
     "python-multipart>=0.0.32",
     "sentence-transformers>=5.6.0",
     "sqlalchemy>=2.0.50",
+    "voyageai>=0.5.0",
 ]
 
 [tool.ruff]
