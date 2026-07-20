@@ -67,7 +67,6 @@ class ChatEngine:
     ):
         messages = ChatEngine.compose_chat_messages(history, prompt)
         agent = get_agent(llm_model)
-        # print(messages)
         try:
             async for chunk, metadata in agent.astream(
                 {"messages": messages},

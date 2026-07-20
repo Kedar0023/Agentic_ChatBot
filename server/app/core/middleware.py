@@ -35,7 +35,6 @@ def decode_access_token(token: str) -> TokenPayload:
 def authenticate_user(token: Annotated[str, Depends(oauth_scheme)]) -> TokenPayload:
     payload = decode_access_token(token)
 
-    # print(payload)
 
     if payload.type != TokenType.ACCESS:
         raise HTTPException(status_code=401, detail="Access token required")

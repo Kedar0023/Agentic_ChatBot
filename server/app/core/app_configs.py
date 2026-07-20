@@ -12,6 +12,7 @@ class AppConfigs(BaseSettings):
     app_name: str = "Fastapi_chatbot"
     app_env: str = "fast_env"
     database_url: SecretStr 
+    cors_origins: str
     jwt_secret_key: SecretStr
     jwt_algorithm: str
     access_exp_mins: int = 30

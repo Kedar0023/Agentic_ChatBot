@@ -11,7 +11,7 @@ from app.schema.authSchema import TokenPayload
 from app.schema.chatSchema import ChatRequest, UpdateModelRequest
 from app.controllers import chat
 
-router = APIRouter(prefix="/chat")
+router = APIRouter(prefix="/v1/chat")
 
 # ---------------------------------------------------------------------------
 

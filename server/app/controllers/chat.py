@@ -183,7 +183,7 @@ async def generator(
 
 # Return the catalog of available models and the thread's current selection.
 async def get_thread_models_controller(thread_id: str, access_token: TokenPayload, db: Session):
-    print("inside get_thread_models_controller")
+
     thread = ThreadRepo.get_by_id_and_user(db, thread_id, access_token.sub)
     if not thread:
         raise HTTPException(status_code=403, detail="Forbidden")

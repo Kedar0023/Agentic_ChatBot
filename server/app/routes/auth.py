@@ -7,7 +7,7 @@ from app.database.db import get_db
 from app.schema.authSchema import LoginRequest, LoginResponse, SignupRequest, SignupResponse
 from app.controllers import auth
 
-router = APIRouter(prefix="/auth")
+router = APIRouter(prefix="/v1/auth")
 
 # --------------------------------------------------------------------------------
 

@@ -15,7 +15,7 @@ from app.database.db import get_db
 from app.schema.authSchema import TokenPayload
 from app.controllers import doc_upload_pipeline as document
 
-router = APIRouter(prefix="/chat/{thread_id}")
+router = APIRouter(prefix="/v1/chat/{thread_id}")
 
 # ---------------------------------------------------------------------------
 
@@ -27,7 +27,6 @@ async def upload_document(
     db: Annotated[Session, Depends(get_db)],
     file: UploadFile = File(...),
 ):
-    # print(thread_id, access_token, db, file)
     return await document.upload_document_controller(thread_id, access_token, db, file)
 
 
