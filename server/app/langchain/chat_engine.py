@@ -1,5 +1,3 @@
-from langchain.agents import create_agent
-from langchain.chat_models import init_chat_model
 from langchain_core.messages import (
     AIMessage,
     HumanMessage,
@@ -10,14 +8,8 @@ from langchain_core.messages import (
 from app.schema.chatSchema import Context
 
 from app.core.logging import logger
-from app.langchain.tools import get_tools
-from app.utils.prompts import SYSTEM_PROMPT
+from app.langchain.llm import get_agent
 
-ollama_model = init_chat_model(model="qwen3:4b", model_provider="ollama", temperature=0.0)
-
-agent_executor = create_agent(
-    model=ollama_model, tools=get_tools(), system_prompt=SYSTEM_PROMPT, context_schema=Context
-)
 
 # -----------------------------------------------------------------------------------------
 
@@ -48,11 +40,15 @@ class ChatEngine:
 
     @staticmethod
     async def invoke(
-        history: list[HumanMessage | AIMessage], prompt: str, thread_id: str | None = None
+        history: list[HumanMessage | AIMessage],
+        prompt: str,
+        thread_id: str | None = None,
+        llm_model: str | None = None,
     ) -> str:
         messages = ChatEngine.compose_chat_messages(history, prompt)
+        agent = get_agent(llm_model)
         try:
-            res = await agent_executor.ainvoke(
+            res = await agent.ainvoke(
                 {"messages": messages}, context=Context(thread_id=thread_id)
             )
             return res["messages"][-1].content
@@ -64,12 +60,16 @@ class ChatEngine:
 
     @staticmethod
     async def stream(
-        history: list[HumanMessage | AIMessage], prompt: str, thread_id: str | None = None
+        history: list[HumanMessage | AIMessage],
+        prompt: str,
+        thread_id: str | None = None,
+        llm_model: str | None = None,
     ):
         messages = ChatEngine.compose_chat_messages(history, prompt)
+        agent = get_agent(llm_model)
         # print(messages)
         try:
-            async for chunk, metadata in agent_executor.astream(
+            async for chunk, metadata in agent.astream(
                 {"messages": messages},
                 stream_mode="messages",
                 context=Context(thread_id=thread_id),

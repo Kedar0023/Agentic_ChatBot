@@ -13,6 +13,10 @@ class ChatRequest(BaseModel):
     prompt: str
 
 
+class UpdateModelRequest(BaseModel):
+    model: str
+
+
 @dataclass
 class Context:
     thread_id: str

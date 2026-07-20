@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 from app.core.middleware import authenticate_user
 from app.database.db import get_db , get_async_db_session
 from app.schema.authSchema import TokenPayload
-from app.schema.chatSchema import ChatRequest
+from app.schema.chatSchema import ChatRequest, UpdateModelRequest
 from app.controllers import chat
 
 router = APIRouter(prefix="/chat")
@@ -57,13 +57,13 @@ async def chat_(
     db: Annotated[Session, Depends(get_db)],
     async_db_session: Annotated[async_sessionmaker[AsyncSession],Depends(get_async_db_session)]
 ):
-    lc_history, ai_msg = await chat.authenticated_chat_controller_2(
+    lc_history, ai_msg, llm_model = await chat.authenticated_chat_controller_2(
         req.prompt, thread_id, access_token, db
     )
     db.expunge(ai_msg)  # detach — ai_msg must not stay bound to the sync session
 
     return StreamingResponse(
-        chat.generator(req.prompt, lc_history, ai_msg, async_db_session, thread_id),
+        chat.generator(req.prompt, lc_history, ai_msg, async_db_session, thread_id, llm_model=llm_model),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -74,7 +74,6 @@ async def chat_(
 
 # ---------------------------------------------------------------------------------
 
-
 @router.get("/base/get_messages/{thread_id}", status_code=200)
 async def get_messages(
     thread_id: str,
@@ -82,3 +81,29 @@ async def get_messages(
     db: Annotated[Session, Depends(get_db)],
 ):
     return await chat.get_messages_controller(thread_id, access_token, db)
+
+
+# Model selection endpoints
+# ---------------------------------------------------------------------------------
+
+@router.get("/base/{thread_id}/models", status_code=200)
+async def get_thread_models(
+    thread_id: str,
+    access_token: Annotated[TokenPayload, Depends(authenticate_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    return await chat.get_thread_models_controller(thread_id, access_token, db)
+
+# ---------------------------------------------------------------------------------
+
+
+@router.patch("/base/{thread_id}/model", status_code=200)
+async def update_thread_model(
+    thread_id: str,
+    req: UpdateModelRequest,
+    access_token: Annotated[TokenPayload, Depends(authenticate_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    return await chat.update_thread_model_controller(
+        thread_id, req.model, access_token, db
+    )

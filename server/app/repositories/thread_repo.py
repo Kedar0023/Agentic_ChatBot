@@ -38,6 +38,11 @@ class ThreadRepo:
         if thread.llm_model is None and llm_model is not None:
             thread.llm_model = llm_model
 
+    @staticmethod
+    def update_model(thread: Thread, llm_model: str) -> None:
+        """Overwrite the thread's LLM model selection."""
+        thread.llm_model = llm_model
+
 
 class DocumentRepo:
     """Repository encapsulating all Document database operations."""
