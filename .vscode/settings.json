@@ -1,28 +1,34 @@
 {
-    "files.exclude": {
-        "**/.git": true,
-        "**/.svn": true,
-        "**/.hg": true,
-        "**/.DS_Store": true,
-        "**/Thumbs.db": true,
-        "**/__pycache__": true,
-        "**/.venv": true,
-        "**/uv.lock": true,
-        // "**/pyproject.toml":true,
-        "**/.python-version": true,
-        "**/__init__.py" : true
-    },
-    "python.languageServer": "Pylance",
-    "python.defaultInterpreterPath": "${workspaceFolder}/server/.venv/bin/python",
-    "python.analysis.exclude": [
-        "**/.venv",
-        "**/__pycache__", "**/node_modules", "**/.*"
-    ],
-    "files.watcherExclude": {
-        "**/server/.venv" : true
-    },
-    "search.exclude": {
-        "**/server/.venv": true
-    },
+  "files.exclude": {
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true,
+    "**/__pycache__": true,
+    "**/.venv": true,
+    "**/uv.lock": true,
+    "**/.python-version": true,
+    "**/__init__.py": true,
+    "**/alembic.ini": true,
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/vite.config.ts": true,
+    "**/routeTree.gen.ts": true,
+    "**/bun.lock": true,
+    "**/tsr.config.json" :true,
 
+  },
+  "files.watcherExclude": {
+    "**/.venv": true,
+    "**/routeTree.gen.ts": true
+  },
+  "search.exclude": {
+    "**/.venv": true,
+    "**/routeTree.gen.ts": true,
+    "**/node_modules": true
+  },
+  "python.languageServer": "Pylance",
+  "python.defaultInterpreterPath": "${workspaceFolder}/server/.venv/bin/python"
 }

@@ -1,0 +1,42 @@
+{
+  "folders": [
+    {
+      "name": "server",
+      "path": "server"
+    },
+    {
+      "name": "client",
+      "path": "client"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/.git": true,
+      "**/.svn": true,
+      "**/.hg": true,
+      "**/.DS_Store": true,
+      "**/Thumbs.db": true,
+      "**/__pycache__": true,
+      "**/.venv": true,
+      "**/uv.lock": true,
+      "**/.python-version": true,
+      "**/__init__.py": true,
+      "**/alembic.ini": true,
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/build": true,
+      "**/vite.config.ts": true,
+      "**/routeTree.gen.ts": true,
+      "**/bun.lock": true
+    },
+    "files.watcherExclude": {
+      "**/.venv": true,
+      "**/routeTree.gen.ts": true
+    },
+    "search.exclude": {
+      "**/.venv": true,
+      "**/routeTree.gen.ts": true,
+      "**/node_modules": true
+    }
+  }
+}
