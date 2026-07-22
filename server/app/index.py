@@ -13,13 +13,13 @@ from app.routes.chatmodel import router as chat_router
 from app.routes.document import router as document_router
 
 app = FastAPI()
-origins_env = os.getenv("CORS_ORIGINS", "*")
-origins = origins_env.split(",") if origins_env != "*" else ["*"]
+origins_env = os.getenv("CORS_ORIGINS", "http://localhost:3000")
+origins = origins_env.split(",")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=False if origins == ["*"] else True,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )

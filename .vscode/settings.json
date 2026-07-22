@@ -18,6 +18,9 @@
     "**/routeTree.gen.ts": true,
     "**/bun.lock": true,
     "**/tsr.config.json" :true,
+    "**/tsconfig.json" :true,
+    "**/.cta.json" :true,
+    "**/biome.json" :true,
 
   },
   "files.watcherExclude": {
