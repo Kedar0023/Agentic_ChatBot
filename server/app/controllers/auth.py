@@ -12,7 +12,7 @@ from app.core.logging import logger
 from app.models.user import RefreshToken, User
 from app.repositories.refresh_token_repo import RefreshTokenRepo
 from app.repositories.user_repo import UserRepo
-from app.schema.authSchema import LoginRequest, SignupRequest, TokenType
+from app.schema.authSchema import LoginRequest, SignupRequest, TokenPayload, TokenType
 from app.utils.security import create_token, hash_token
 
 AppConfig = getAppConfig()
@@ -226,3 +226,22 @@ async def token_refresher_controller(req: Request, res: Response, db: Session):
         "username": user.username,
         "access_token": new_access_token,
     }
+
+
+# ----------------------------------------------------------------------------------
+
+
+async def get_me_controller(access_token: TokenPayload, db: Session):
+    user_id = int(access_token.sub)
+    user: User | None = UserRepo.get_user_by_id(db, user_id)
+    if not user:
+        logger.warning("User not found for user_id=%s", user_id)
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return {
+        "id": str(user.id),
+        "userId": str(user.id),
+        "username": user.username,
+        "is_active": user.is_active,
+    }
+

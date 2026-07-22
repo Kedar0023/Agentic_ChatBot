@@ -45,3 +45,11 @@ class LoginResponse(BaseModel):
     userId: str
     username: str
     access_token: str
+
+
+class UserResponse(BaseModel):
+    id: str
+    userId: str
+    username: str
+    is_active: bool
+
