@@ -1,15 +1,15 @@
-import { useState } from 'react'
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { HTTPError } from 'ky'
-import { AlertCircle, Eye, EyeOff, User, Lock, Info } from 'lucide-react'
+import { useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { HTTPError } from "ky";
+import { AlertCircle, Eye, EyeOff, User, Lock, Info } from "lucide-react";
 
-import { api } from '#/lib/KyClient'
-import { RegisterSchema, type SignupFormData } from '#/schemas/auth'
-import { Google } from '#/components/ui/svgs/google'
-import { Separator } from '#/components/ui/separator'
-import { Button } from '#/components/ui/button'
+import { api } from "#/lib/KyClient";
+import { RegisterSchema, type SignupFormData } from "#/schemas/auth";
+import { Google } from "#/components/ui/svgs/google";
+import { Separator } from "#/components/ui/separator";
+import { Button } from "#/components/ui/button";
 import {
   Card,
   CardContent,
@@ -17,66 +17,76 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '#/components/ui/card'
+} from "#/components/ui/card";
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
-  FormLabel, FormMessage,
-} from '#/components/ui/form'
-import { Input } from '#/components/ui/input'
-import { ThemeToggle } from '#/components/ThemeToggle'
+  FormLabel,
+  FormMessage,
+} from "#/components/ui/form";
+import { Input } from "#/components/ui/input";
+import { ThemeToggle } from "#/components/ThemeToggle";
 
-export const Route = createFileRoute('/(auth)/register')({
+export const Route = createFileRoute("/(auth)/register")({
   component: RegisterPage,
-})
+});
 
 function RegisterPage() {
-  const navigate = useNavigate()
-  const [serverError, setServerError] = useState<string | null>(null)
-  const [betaMessage, setBetaMessage] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const navigate = useNavigate();
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [betaMessage, setBetaMessage] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const form = useForm<SignupFormData>({
     resolver: zodResolver(RegisterSchema),
     defaultValues: {
-      username: '',
-      password: '',
-      confirmPassword: '',
+      username: "",
+      password: "",
+      confirmPassword: "",
     },
-  })
+  });
 
-  const isSubmitting = form.formState.isSubmitting
+  const isSubmitting = form.formState.isSubmitting;
 
   const onSubmit = async (data: SignupFormData) => {
-    setServerError(null)
+    setServerError(null);
     try {
-      await api.post('auth/register', {
+      await api.post("auth/register", {
         json: {
           username: data.username,
           password: data.password,
         },
-      })
-      navigate({ to: '/login' })
+      });
+      navigate({ to: "/login" });
     } catch (err) {
       if (err instanceof HTTPError) {
         try {
-          const errorData = await err.response.json<{ message?: string; detail?: string }>()
+          const errorData = await err.response.json<{
+            message?: string;
+            detail?: string;
+          }>();
           setServerError(
-            errorData.detail || errorData.message || 'Registration failed. Please try again.'
-          )
+            errorData.detail ||
+            errorData.message ||
+            "Registration failed. Please try again.",
+          );
         } catch {
-          setServerError(`Registration failed (${err.response.status}). Please try again.`)
+          setServerError(
+            `Registration failed (${err.response.status}). Please try again.`,
+          );
         }
       } else if (err instanceof Error) {
-        setServerError('A network error occurred. Please check your connection and try again.')
+        setServerError(
+          "A network error occurred. Please check your connection and try again.",
+        );
       } else {
-        setServerError('An unexpected error occurred. Please try again.')
+        setServerError("An unexpected error occurred. Please try again.");
       }
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -85,7 +95,9 @@ function RegisterPage() {
       </div>
       <Card className="w-full max-w-md shadow-lg ">
         <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl font-bold tracking-tight">Create an account</CardTitle>
+          <CardTitle className="text-2xl font-bold tracking-tight">
+            Create an account
+          </CardTitle>
           <CardDescription>
             Enter your details below to create your account
           </CardDescription>
@@ -108,7 +120,10 @@ function RegisterPage() {
               role="status"
             >
               <Info className="h-4 w-4 shrink-0" />
-              <span>Google Sign-In is currently in beta/dev. Please register with a username and password.</span>
+              <span>
+                Google Sign-In is currently in beta/dev. Please register with a
+                username and password.
+              </span>
             </div>
           )}
 
@@ -148,7 +163,7 @@ function RegisterPage() {
                         <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
                           {...field}
-                          type={showPassword ? 'text' : 'password'}
+                          type={showPassword ? "text" : "password"}
                           placeholder="Enter your password"
                           autoComplete="new-password"
                           disabled={isSubmitting}
@@ -184,7 +199,7 @@ function RegisterPage() {
                         <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
                           {...field}
-                          type={showConfirmPassword ? 'text' : 'password'}
+                          type={showConfirmPassword ? "text" : "password"}
                           placeholder="Confirm your password"
                           autoComplete="new-password"
                           disabled={isSubmitting}
@@ -192,7 +207,9 @@ function RegisterPage() {
                         />
                         <button
                           type="button"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          onClick={() =>
+                            setShowConfirmPassword(!showConfirmPassword)
+                          }
                           className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground"
                           tabIndex={-1}
                         >
@@ -210,7 +227,7 @@ function RegisterPage() {
               />
 
               <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? 'Creating account...' : 'Register'}
+                {isSubmitting ? "Creating account..." : "Register"}
               </Button>
             </form>
           </Form>
@@ -234,12 +251,14 @@ function RegisterPage() {
 
         <CardFooter className="flex justify-center border-t p-4 text-sm text-muted-foreground">
           <span>Already have an account?</span>
-          <Link to="/login" className="ml-1 text-primary underline-offset-4 hover:underline">
+          <Link
+            to="/login"
+            className="ml-1 text-primary underline-offset-4 hover:underline"
+          >
             Log in
           </Link>
         </CardFooter>
       </Card>
     </div>
-  )
+  );
 }
-

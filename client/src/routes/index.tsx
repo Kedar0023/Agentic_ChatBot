@@ -52,7 +52,7 @@ export default function TheChatBotLandingPage() {
             </a>
             <ThemeToggle/>
             <a
-              href="#demo"
+              href="login"
               className="inline-flex items-center justify-center rounded-md text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3 transition-colors"
             >
               Live Demo

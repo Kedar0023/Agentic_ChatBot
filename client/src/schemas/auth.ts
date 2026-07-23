@@ -21,3 +21,18 @@ export const RegisterSchema = z
   });
 
 export type SignupFormData = z.infer<typeof RegisterSchema>;
+
+export const LoginSchema = z.object({
+  username: z
+    .string()
+    .min(3, "Username must be at least 3 characters")
+    .max(50, "Username must be at most 50 characters")
+    .regex(/^\S+$/, "Username cannot contain whitespace"),
+
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters")
+    .max(100, "Password must be at most 100 characters"),
+});
+
+export type LoginFormData = z.infer<typeof LoginSchema>;
