@@ -20,7 +20,8 @@
     "**/tsr.config.json" :true,
     "**/tsconfig.json" :true,
     "**/.cta.json" :true,
-    "**/biome.json" :true,
+    // "**/biome.json" :true,
+    "**/__root.tsx":true
 
   },
   "files.watcherExclude": {
@@ -32,6 +33,4 @@
     "**/routeTree.gen.ts": true,
     "**/node_modules": true
   },
-  "python.languageServer": "Pylance",
-  "python.defaultInterpreterPath": "${workspaceFolder}/server/.venv/bin/python"
 }

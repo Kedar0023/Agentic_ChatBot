@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const signupSchema = z
+export const RegisterSchema = z
   .object({
     username: z
       .string()
@@ -20,4 +20,4 @@ export const signupSchema = z
     message: "Passwords do not match",
   });
 
-export type SignupFormData = z.infer<typeof signupSchema>;
+export type SignupFormData = z.infer<typeof RegisterSchema>;
