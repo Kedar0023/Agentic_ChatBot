@@ -1,24 +1,18 @@
 import  { useState } from 'react';
-import { createFileRoute } from '@tanstack/react-router';
-import { motion, AnimatePresence } from 'motion/react';
-import {techBadges ,features,archPipeline} from '#/lib/demoData.ts'
+
+import {techBadges ,features,archPipeline} from '../lib/demoData'
 import {
   Bot,
   Network,
-  Github,
-  Linkedin,
   FileText,
   ExternalLink,
   ChevronRight,
   Sparkles,
 } from 'lucide-react';
-import { ThemeToggle } from '#/components/ThemeToggle';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 
-export const Route = createFileRoute('/')({
-  component: TheChatBotLandingPage,
-});
-export default function TheChatBotLandingPage() {
+export default function LandingPage() {
   const [activeArchNode, setActiveArchNode] = useState<number | null>(null);
 
 
@@ -26,7 +20,7 @@ export default function TheChatBotLandingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground font-sans antialiased selection:bg-primary selection:text-primary-foreground">
       {/* Navigation */}
-      <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
         <div className="max-w-6xl mx-auto flex h-14 items-center justify-between px-6">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
@@ -47,7 +41,7 @@ export default function TheChatBotLandingPage() {
               rel="noreferrer"
               className="inline-flex items-center justify-center rounded-md text-xs font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 transition-colors"
             >
-              <Github className="mr-2 h-3.5 w-3.5" />
+              {/* <Github className="mr-2 h-3.5 w-3.5" /> */}
               Source Code
             </a>
             <ThemeToggle/>
@@ -64,40 +58,20 @@ export default function TheChatBotLandingPage() {
 
       {/* Hero Section */}
       <section className="py-20 md:py-28 px-6 max-w-6xl mx-auto text-center border-b border-border">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/50 px-3 py-1 text-xs font-mono text-muted-foreground mb-6"
-        >
+        <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/50 px-3 py-1 text-xs font-mono text-muted-foreground mb-6">
           <Sparkles className="h-3.5 w-3.5 text-primary" />
           <span>Production-Ready RAG Platform</span>
-        </motion.div>
+        </div>
 
-        <motion.h1
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.05 }}
-          className="text-4xl md:text-6xl font-bold tracking-tight max-w-3xl mx-auto leading-tight mb-6"
-        >
+        <h1 className="text-4xl md:text-6xl font-bold tracking-tight max-w-3xl mx-auto leading-tight mb-6">
           High-Density Vector Retrieval & Async Streaming
-        </motion.h1>
+        </h1>
 
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
-          className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto mb-8 leading-relaxed"
-        >
+        <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto mb-8 leading-relaxed">
           An enterprise RAG system engineered with FastAPI, Cloudflare R2, VoyageAI, and hybrid vector indexes for low-latency contextual intelligence.
-        </motion.p>
+        </p>
 
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.15 }}
-          className="flex flex-wrap items-center justify-center gap-3"
-        >
+        <div className="flex flex-wrap items-center justify-center gap-3">
           <a
             href="#architecture"
             className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 transition-colors"
@@ -111,7 +85,7 @@ export default function TheChatBotLandingPage() {
           >
             Developer Overview
           </a>
-        </motion.div>
+        </div>
       </section>
 
       {/* System Architecture Visualizer */}
@@ -155,32 +129,24 @@ export default function TheChatBotLandingPage() {
           })}
         </div>
 
-        <AnimatePresence>
-          {activeArchNode && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-              className="mt-4 rounded-lg border border-border bg-muted/40 p-4 font-mono text-xs text-muted-foreground"
-            >
-              <div className="flex items-center justify-between border-b border-border pb-2 mb-2 text-foreground font-semibold">
-                <span className="flex items-center gap-2">
-                  <Network className="h-3.5 w-3.5" /> Pipeline Trace Log
-                </span>
-                <button
-                  onClick={() => setActiveArchNode(null)}
-                  className="text-muted-foreground hover:text-foreground text-[11px]"
-                >
-                  [Dismiss]
-                </button>
-              </div>
-              <p>
-                Stage {activeArchNode} initialized. Payload verified. Connection handshake latency &lt; 2ms.
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {activeArchNode && (
+          <div className="mt-4 rounded-lg border border-border bg-muted/40 p-4 font-mono text-xs text-muted-foreground">
+            <div className="flex items-center justify-between border-b border-border pb-2 mb-2 text-foreground font-semibold">
+              <span className="flex items-center gap-2">
+                <Network className="h-3.5 w-3.5" /> Pipeline Trace Log
+              </span>
+              <button
+                onClick={() => setActiveArchNode(null)}
+                className="text-muted-foreground hover:text-foreground text-[11px]"
+              >
+                [Dismiss]
+              </button>
+            </div>
+            <p>
+              Stage {activeArchNode} initialized. Payload verified. Connection handshake latency &lt; 2ms.
+            </p>
+          </div>
+        )}
       </section>
 
       {/* Feature & Benchmarks Section */}
@@ -245,7 +211,7 @@ export default function TheChatBotLandingPage() {
               rel="noreferrer"
               className="inline-flex items-center justify-center rounded-md text-xs font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 transition-colors"
             >
-              <Github className="mr-2 h-4 w-4" />
+              {/* <Github className="mr-2 h-4 w-4" /> */}
               GitHub
             </a>
             <a
@@ -254,7 +220,7 @@ export default function TheChatBotLandingPage() {
               rel="noreferrer"
               className="inline-flex items-center justify-center rounded-md text-xs font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 transition-colors"
             >
-              <Linkedin className="mr-2 h-4 w-4" />
+              {/* <Linkedin className="mr-2 h-4 w-4" /> */}
               LinkedIn
             </a>
             <a
@@ -276,3 +242,4 @@ export default function TheChatBotLandingPage() {
     </div>
   );
 }
+

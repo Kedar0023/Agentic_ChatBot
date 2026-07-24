@@ -20,6 +20,7 @@ const initialState: ThemeProviderState = {
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState)
 
+
 export function ThemeProvider({
   children,
   defaultTheme = "system",
@@ -84,7 +85,7 @@ export const useTheme = () => {
 // ------------------------------------------------------------------------------
 
 import { Moon, Sun } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Button } from "../components/ui/button"
 
 export function ThemeToggle() {
   const { setTheme, theme } = useTheme()
@@ -95,7 +96,7 @@ export function ThemeToggle() {
       size="icon"
       onClick={() => setTheme(theme === "light" ? "dark" : "light")}
     >
-      <Sun className="h-[1.5rem] w-[1.3rem] dark:hidden" />
+      <Sun className="h-6 w-[1.3rem] dark:hidden" />
       <Moon className="hidden h-5 w-5 dark:block dark:text-white" />
       <span className="sr-only">Toggle theme</span>
     </Button>

@@ -15,13 +15,10 @@
     "**/dist": true,
     "**/build": true,
     "**/vite.config.ts": true,
-    "**/routeTree.gen.ts": true,
     "**/bun.lock": true,
-    "**/tsr.config.json" :true,
     "**/tsconfig.json" :true,
-    "**/.cta.json" :true,
-    // "**/biome.json" :true,
-    "**/__root.tsx":true
+    "**/components.json" :true,
+    "**/react-router.config.ts" :true
 
   },
   "files.watcherExclude": {
