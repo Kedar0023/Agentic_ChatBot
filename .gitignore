@@ -100,3 +100,4 @@ wheels/
 
 # Virtual environments
 .venv
+api_report.md

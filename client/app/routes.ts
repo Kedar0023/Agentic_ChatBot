@@ -12,5 +12,6 @@ export default [
   // Protected routes (redirect guest users to /login)
   layout("routes/protected-layout.tsx", [
     route("home", "routes/home.tsx"),
+    route("chat/:thread_id", "routes/chat.tsx"),
   ]),
 ] satisfies RouteConfig;

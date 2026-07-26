@@ -1,42 +1,66 @@
+import { useState } from "react";
+import { Sidebar, MobileSidebarTrigger } from "@/components/sidebar";
 import { useAuthStore } from "@/lib/ZustandStore";
-import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { LogOut, User as UserIcon } from "lucide-react";
+import { Sparkles, MessageSquarePlus, Bot } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function HomePage() {
   const user = useAuthStore((state) => state.user);
-  const logout = useAuthStore((state) => state.logout);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <header className="flex justify-between items-center pb-6 border-b border-border">
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-        <div className="flex items-center gap-4">
-          <ThemeToggle />
-          <Button variant="outline" size="sm" onClick={logout} className="gap-2">
-            <LogOut className="h-4 w-4" />
-            Logout
-          </Button>
-        </div>
-      </header>
-      <main className="mt-8 max-w-xl mx-auto space-y-4">
-        <div className="p-6 rounded-lg border border-border bg-card shadow-sm space-y-3">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-primary/10 rounded-full text-primary">
-              <UserIcon className="h-6 w-6" />
+    <div className="flex h-screen w-full bg-background overflow-hidden">
+      {/* Mounted Sidebar */}
+      <Sidebar
+        isMobileOpen={mobileOpen}
+        onMobileClose={() => setMobileOpen(false)}
+      />
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto">
+        {/* Top Header Bar with Mobile Trigger & Theme Toggle */}
+        <header className="h-14 border-b border-border flex items-center justify-between px-4 shrink-0 bg-background/80 backdrop-blur-xs">
+          <div className="flex items-center gap-2">
+            <MobileSidebarTrigger onClick={() => setMobileOpen(true)} />
+            <h1 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Sparkles className="size-4 text-primary" />
+              New Conversation
+            </h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+          </div>
+        </header>
+
+        {/* Dashboard / Chat Home Content */}
+        <main className="flex-1 flex flex-col items-center justify-center p-6 text-center max-w-3xl mx-auto space-y-6">
+          <div className="size-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shadow-inner">
+            <Bot className="size-8" />
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+              What can I help you build today, {user?.username || "Friend"}?
+            </h2>
+            <p className="text-muted-foreground text-sm max-w-md mx-auto">
+              Ask questions, analyze documents, or stream AI reasoning tokens in real-time.
+            </p>
+          </div>
+
+          {/* Quick Start Action Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-lg text-left pt-4">
+            <div className="p-4 rounded-xl border border-border bg-card hover:bg-accent/40 cursor-pointer transition-all space-y-1">
+              <p className="text-xs font-semibold text-foreground">FastAPI & SSE Streaming</p>
+              <p className="text-[11px] text-muted-foreground">Setup low latency async generators for chat completions.</p>
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Logged in as</p>
-              <p className="text-lg font-semibold">{user?.username || "Authenticated User"}</p>
+            <div className="p-4 rounded-xl border border-border bg-card hover:bg-accent/40 cursor-pointer transition-all space-y-1">
+              <p className="text-xs font-semibold text-foreground">RAG Vector Indexing</p>
+              <p className="text-[11px] text-muted-foreground">Query hybrid ChromaDB & Pinecone embeddings.</p>
             </div>
           </div>
-          {user?.email && (
-            <p className="text-sm text-muted-foreground">
-              Email: <span className="font-medium text-foreground">{user.email}</span>
-            </p>
-          )}
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }
