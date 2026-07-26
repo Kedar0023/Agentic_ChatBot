@@ -14,6 +14,7 @@ from app.langchain.llm import DEFAULT_MODEL, AVAILABLE_MODELS, list_models
 from app.models.chats import Message, MessageRole, MessageStatus
 from app.repositories.message_repo import MessageRepo
 from app.repositories.thread_repo import ThreadRepo
+from app.repositories.user_repo import UserRepo
 from app.schema.authSchema import TokenPayload
 
 CHAT_LIMIT = 20
@@ -226,3 +227,102 @@ async def update_thread_model_controller(thread_id: str, llm_model: str, access_
         "thread_id": str(thread.id),
         "model": thread.llm_model,
     }
+
+#---------------------------------------------------------------------------------
+
+async def get_all_thread_titles_controller(access_token: TokenPayload, db: Session) -> list[dict[str, str]]:
+    try:
+        user_id = int(access_token.sub)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="Invalid user ID in token payload.")
+
+    user = UserRepo.get_user_by_id(db, user_id)
+    if not user:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    try:
+        threads: list[dict[str, str]] = UserRepo.get_all_thread_titles(db, user_id)
+        return threads
+    except Exception as e:
+        logger.error("Failed to fetch thread titles user_id=%s", user_id, exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "message": "An unexpected error occurred while fetching thread titles.",
+                "error": str(e.__cause__ or e),
+            },
+        )
+
+
+# ---------------------------------------------------------------------------------
+
+
+async def update_thread_title_controller(
+    thread_id: str, title: str, access_token: TokenPayload, db: Session
+) -> dict[str, str]:
+    try:
+        user_id = int(access_token.sub)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="Invalid user ID in token payload.")
+
+    thread = ThreadRepo.get_by_id_and_user(db, thread_id, user_id)
+    if not thread:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    ThreadRepo.update_title(thread, title)
+    try:
+        db.commit()
+        db.refresh(thread)
+    except Exception as e:
+        db.rollback()
+        logger.error("Title update failed thread_id=%s", thread_id, exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "message": "Failed to update thread title.",
+                "error": str(e.__cause__ or e),
+            },
+        )
+
+    logger.info("Thread title updated thread_id=%s title=%s", thread_id, title)
+    return {
+        "thread_id": str(thread.id),
+        "title": thread.title,
+    }
+
+
+# ---------------------------------------------------------------------------------
+
+
+async def delete_chat_thread_controller(
+    thread_id: str, access_token: TokenPayload, db: Session
+) -> dict[str, str]:
+    try:
+        user_id = int(access_token.sub)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="Invalid user ID in token payload.")
+
+    thread = ThreadRepo.get_by_id_and_user(db, thread_id, user_id)
+    if not thread:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    try:
+        ThreadRepo.delete(db, thread)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        logger.error("Thread deletion failed thread_id=%s", thread_id, exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "message": "Failed to delete chat thread.",
+                "error": str(e.__cause__ or e),
+            },
+        )
+
+    logger.info("Thread deleted thread_id=%s user_id=%s", thread_id, user_id)
+    return {"message": "Thread deleted successfully", "thread_id": thread_id}
+
+
+
+

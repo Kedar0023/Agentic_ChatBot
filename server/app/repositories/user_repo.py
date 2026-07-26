@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 
 from app.models.user import User
+from app.models.chats import Thread
 
 
 class UserRepo:
@@ -28,3 +29,26 @@ class UserRepo:
 
         db.add(user)
         return user
+
+    @staticmethod
+    def get_all_thread_titles(db: Session, user_id: int) -> list[dict[str, str]]:
+        rows = (
+            db.query(Thread.id, Thread.title)
+            .filter(
+                Thread.user_id == user_id,
+                Thread.title.isnot(None),
+            )
+            .order_by(Thread.updated_at.desc())
+            .all()
+        )
+
+        return [
+            {
+                "id": str(thread_id),
+                "title": title,
+            }
+            for thread_id, title in rows
+            if title
+        ]
+
+

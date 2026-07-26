@@ -43,6 +43,17 @@ class ThreadRepo:
         """Overwrite the thread's LLM model selection."""
         thread.llm_model = llm_model
 
+    @staticmethod
+    def update_title(thread: Thread, title: str) -> None:
+        """Overwrite the thread's title."""
+        thread.title = title
+
+    @staticmethod
+    def delete(db: Session, thread: Thread) -> None:
+        """Delete thread (and cascade delete related messages & documents)."""
+        db.delete(thread)
+
+
 
 class DocumentRepo:
     """Repository encapsulating all Document database operations."""

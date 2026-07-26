@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 from app.core.middleware import authenticate_user
 from app.database.db import get_db , get_async_db_session
 from app.schema.authSchema import TokenPayload
-from app.schema.chatSchema import ChatRequest, UpdateModelRequest
+from app.schema.chatSchema import ChatRequest, UpdateModelRequest, UpdateTitleRequest
 from app.controllers import chat
 
 router = APIRouter(prefix="/v1/chat")
@@ -107,3 +107,41 @@ async def update_thread_model(
     return await chat.update_thread_model_controller(
         thread_id, req.model, access_token, db
     )
+
+#---------------------------------------------------------------------------------
+
+@router.get("/base/get_all_thread_titles", response_model=list[dict[str, str]], status_code=200)
+async def get_all_thread_titles(
+    access_token: Annotated[TokenPayload, Depends(authenticate_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> list[dict[str, str]]:
+    return await chat.get_all_thread_titles_controller(access_token, db)
+
+
+# ---------------------------------------------------------------------------------
+
+@router.patch("/base/{thread_id}/title", status_code=200)
+async def update_thread_title(
+    thread_id: str,
+    req: UpdateTitleRequest,
+    access_token: Annotated[TokenPayload, Depends(authenticate_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    return await chat.update_thread_title_controller(
+        thread_id, req.title, access_token, db
+    )
+
+
+# ---------------------------------------------------------------------------------
+
+
+@router.delete("/base/{thread_id}", status_code=200)
+async def delete_chat_thread(
+    thread_id: str,
+    access_token: Annotated[TokenPayload, Depends(authenticate_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    return await chat.delete_chat_thread_controller(thread_id, access_token, db)
+
+
+

@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from dataclasses import dataclass
 
 class MessageEntry(BaseModel):
@@ -15,6 +15,10 @@ class ChatRequest(BaseModel):
 
 class UpdateModelRequest(BaseModel):
     model: str
+
+
+class UpdateTitleRequest(BaseModel):
+    title: str = Field(..., min_length=1, max_length=255)
 
 
 @dataclass
