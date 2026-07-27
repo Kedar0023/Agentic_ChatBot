@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Sidebar, MobileSidebarTrigger } from "@/components/sidebar";
 import { useAuthStore } from "@/lib/ZustandStore";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -7,22 +6,18 @@ import { Button } from "@/components/ui/button";
 
 export default function HomePage() {
   const user = useAuthStore((state) => state.user);
-  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden">
       {/* Mounted Sidebar */}
-      <Sidebar
-        isMobileOpen={mobileOpen}
-        onMobileClose={() => setMobileOpen(false)}
-      />
+      <Sidebar />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto">
         {/* Top Header Bar with Mobile Trigger & Theme Toggle */}
         <header className="h-14 border-b border-border flex items-center justify-between px-4 shrink-0 bg-background/80 backdrop-blur-xs">
           <div className="flex items-center gap-2">
-            <MobileSidebarTrigger onClick={() => setMobileOpen(true)} />
+            <MobileSidebarTrigger />
             <h1 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <Sparkles className="size-4 text-primary" />
               New Conversation
