@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.models.chats import Message, MessageRole, MessageStatus
 
 
-class MessageRepo:
+class MessageStore:
     """Repository encapsulating all Message database operations."""
 
     @staticmethod

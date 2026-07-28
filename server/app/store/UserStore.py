@@ -4,7 +4,7 @@ from app.models.user import User
 from app.models.chats import Thread
 
 
-class UserRepo:
+class UserStore:
     """Repository encapsulating all User database operations."""
 
     # staticmethod allows to use this fn without instantiating the class
@@ -18,7 +18,7 @@ class UserRepo:
 
     @staticmethod
     def user_exists(db: Session, username: str) -> bool:
-        return UserRepo.get_user_by_username(db, username) is not None
+        return UserStore.get_user_by_username(db, username) is not None
 
     @staticmethod
     def create_user(db: Session, username: str, hashed_password: str) -> User:

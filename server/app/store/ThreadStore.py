@@ -6,7 +6,7 @@ from app.models.chats import Thread
 from app.models.document import Document, DocumentStatus
 
 
-class ThreadRepo:
+class ThreadStore:
     """Repository encapsulating all Thread database operations."""
 
     @staticmethod
@@ -16,23 +16,13 @@ class ThreadRepo:
         return thread
 
     @staticmethod
-    def get_by_id_and_user(db: Session, thread_id: str, user_id: int) -> Thread | None:
+    def get_for_user(db: Session, thread_id: str, user_id: int) -> Thread | None:
         return db.query(Thread).filter(Thread.id == thread_id, Thread.user_id == user_id).first()
-
-    @staticmethod
-    def get_all_by_user(db: Session, user_id: int) -> list[Thread]:
-        return (
-            db.query(Thread)
-            .filter(Thread.user_id == user_id)
-            .order_by(Thread.updated_at.desc())
-            .all()
-        )
 
     @staticmethod
     def update_metadata(
         thread: Thread, title: str | None = None, llm_model: str | None = None
     ) -> None:
-        """Set title / llm_model only when they have not been set yet."""
         if thread.title is None and title is not None:
             thread.title = title
         if thread.llm_model is None and llm_model is not None:
@@ -40,22 +30,19 @@ class ThreadRepo:
 
     @staticmethod
     def update_model(thread: Thread, llm_model: str) -> None:
-        """Overwrite the thread's LLM model selection."""
         thread.llm_model = llm_model
 
     @staticmethod
     def update_title(thread: Thread, title: str) -> None:
-        """Overwrite the thread's title."""
         thread.title = title
 
     @staticmethod
     def delete(db: Session, thread: Thread) -> None:
-        """Delete thread (and cascade delete related messages & documents)."""
         db.delete(thread)
 
 
 
-class DocumentRepo:
+class DocStore:
     """Repository encapsulating all Document database operations."""
 
     @staticmethod

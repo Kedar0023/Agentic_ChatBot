@@ -12,9 +12,9 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 from app.langchain.chat_engine import ChatEngine
 from app.langchain.llm import DEFAULT_MODEL, AVAILABLE_MODELS, list_models
 from app.models.chats import Message, MessageRole, MessageStatus
-from app.repositories.message_repo import MessageRepo
-from app.repositories.thread_repo import ThreadRepo
-from app.repositories.user_repo import UserRepo
+from app.store.MessageStore import MessageStore
+from app.store.ThreadStore import ThreadStore
+from app.store.UserStore import UserStore
 from app.schema.authSchema import TokenPayload
 
 CHAT_LIMIT = 20
@@ -42,7 +42,7 @@ async def create_chat_thread_controller(access_token: TokenPayload, db: Session)
 
     user_id = int(access_token.sub)
 
-    new_thread = ThreadRepo.create(db, thread_id, user_id)
+    new_thread = ThreadStore.create(db, thread_id, user_id)
     try:
         db.commit()
         db.refresh(new_thread)
@@ -67,11 +67,11 @@ async def get_messages_controller(
     access_token: TokenPayload,
     db: Session,
 ):
-    thread = ThreadRepo.get_by_id_and_user(db, thread_id, access_token.sub)
+    thread = ThreadStore.get_for_user(db, thread_id, access_token.sub)
     if not thread:
         raise HTTPException(status_code=403, detail="Forbidden")
 
-    messages = MessageRepo.get_ordered_msgs_by_thread_id(db, thread_id)
+    messages = MessageStore.get_ordered_msgs_by_thread_id(db, thread_id)
 
     return {"messages": messages}
 
@@ -80,15 +80,15 @@ async def get_messages_controller(
 
 
 async def authenticated_chat_controller_2(prompt: str, thread_id: str, access_token: TokenPayload, db: Session):
-    thread = ThreadRepo.get_by_id_and_user(db, thread_id, access_token.sub)
+    thread = ThreadStore.get_for_user(db, thread_id, access_token.sub)
     if not thread:
         raise HTTPException(status_code=403, detail="Forbidden")
 
     # Save user message
-    human_msg = MessageRepo.create(db, thread_id, MessageRole.USER, prompt, MessageStatus.COMPLETE)
+    human_msg = MessageStore.create(db, thread_id, MessageRole.USER, prompt, MessageStatus.COMPLETE)
 
     # Update thread metadata on first message
-    ThreadRepo.update_metadata(thread, title=prompt[:100], llm_model=DEFAULT_MODEL)
+    ThreadStore.update_metadata(thread, title=prompt[:100], llm_model=DEFAULT_MODEL)
 
     try:
         db.commit()
@@ -105,7 +105,7 @@ async def authenticated_chat_controller_2(prompt: str, thread_id: str, access_to
         )
 
     # Create a placeholder AI message
-    ai_msg = MessageRepo.create(db, thread_id, MessageRole.ASSISTANT, "", MessageStatus.STREAMING)
+    ai_msg = MessageStore.create(db, thread_id, MessageRole.ASSISTANT, "", MessageStatus.STREAMING)
 
     try:
         db.commit()
@@ -124,7 +124,7 @@ async def authenticated_chat_controller_2(prompt: str, thread_id: str, access_to
     curr_model = thread.llm_model or DEFAULT_MODEL
 
     # build LC history from DBMessage
-    history = MessageRepo.get_ordered_msgs_by_thread_id(db, thread_id)
+    history = MessageStore.get_ordered_msgs_by_thread_id(db, thread_id)
     lc_history = [ChatEngine.to_lc_message(m.role.value, m.content) for m in history]
 
     return lc_history, ai_msg, curr_model
@@ -168,7 +168,7 @@ async def generator(
             try:
                 ai_msg = await db.merge(ai_msg)
 
-                MessageRepo.update_message(
+                MessageStore.update_message(
                     ai_msg,
                     status,
                     content=full_response,
@@ -185,7 +185,7 @@ async def generator(
 # Return the catalog of available models and the thread's current selection.
 async def get_thread_models_controller(thread_id: str, access_token: TokenPayload, db: Session):
 
-    thread = ThreadRepo.get_by_id_and_user(db, thread_id, access_token.sub)
+    thread = ThreadStore.get_for_user(db, thread_id, access_token.sub)
     if not thread:
         raise HTTPException(status_code=403, detail="Forbidden")
 
@@ -203,11 +203,11 @@ async def update_thread_model_controller(thread_id: str, llm_model: str, access_
             detail=f"Unknown model '{llm_model}'. Use GET /models to see available options.",
         )
 
-    thread = ThreadRepo.get_by_id_and_user(db, thread_id, access_token.sub)
+    thread = ThreadStore.get_for_user(db, thread_id, access_token.sub)
     if not thread:
         raise HTTPException(status_code=403, detail="Forbidden")
 
-    ThreadRepo.update_model(thread, llm_model)
+    ThreadStore.update_model(thread, llm_model)
     try:
         db.commit()
         db.refresh(thread)
@@ -236,12 +236,12 @@ async def get_all_thread_titles_controller(access_token: TokenPayload, db: Sessi
     except (ValueError, TypeError):
         raise HTTPException(status_code=401, detail="Invalid user ID in token payload.")
 
-    user = UserRepo.get_user_by_id(db, user_id)
+    user = UserStore.get_user_by_id(db, user_id)
     if not user:
         raise HTTPException(status_code=403, detail="Forbidden")
 
     try:
-        threads: list[dict[str, str]] = UserRepo.get_all_thread_titles(db, user_id)
+        threads: list[dict[str, str]] = UserStore.get_all_thread_titles(db, user_id)
         return threads
     except Exception as e:
         logger.error("Failed to fetch thread titles user_id=%s", user_id, exc_info=True)
@@ -265,11 +265,11 @@ async def update_thread_title_controller(
     except (ValueError, TypeError):
         raise HTTPException(status_code=401, detail="Invalid user ID in token payload.")
 
-    thread = ThreadRepo.get_by_id_and_user(db, thread_id, user_id)
+    thread = ThreadStore.get_for_user(db, thread_id, user_id)
     if not thread:
         raise HTTPException(status_code=403, detail="Forbidden")
 
-    ThreadRepo.update_title(thread, title)
+    ThreadStore.update_title(thread, title)
     try:
         db.commit()
         db.refresh(thread)
@@ -302,12 +302,12 @@ async def delete_chat_thread_controller(
     except (ValueError, TypeError):
         raise HTTPException(status_code=401, detail="Invalid user ID in token payload.")
 
-    thread = ThreadRepo.get_by_id_and_user(db, thread_id, user_id)
+    thread = ThreadStore.get_for_user(db, thread_id, user_id)
     if not thread:
         raise HTTPException(status_code=403, detail="Forbidden")
 
     try:
-        ThreadRepo.delete(db, thread)
+        ThreadStore.delete(db, thread)
         db.commit()
     except Exception as e:
         db.rollback()

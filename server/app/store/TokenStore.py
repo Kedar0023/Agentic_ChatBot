@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.models.user import RefreshToken
 
 
-class RefreshTokenRepo:
+class RfTokenStore:
     """Repository encapsulating all RefreshToken database operations."""
 
     @staticmethod

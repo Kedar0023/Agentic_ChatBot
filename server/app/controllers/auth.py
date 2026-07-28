@@ -10,8 +10,8 @@ from sqlalchemy.orm import Session
 from app.core.app_configs import getAppConfig
 from app.core.logging import logger
 from app.models.user import RefreshToken, User
-from app.repositories.refresh_token_repo import RefreshTokenRepo
-from app.repositories.user_repo import UserRepo
+from app.store.TokenStore import RfTokenStore
+from app.store.UserStore import UserStore
 from app.schema.authSchema import LoginRequest, SignupRequest, TokenPayload, TokenType
 from app.utils.security import create_token, hash_token
 
@@ -21,7 +21,7 @@ AppConfig = getAppConfig()
 # ----------------------------------------------------------------------------------
 async def register_controller(req: SignupRequest, db: Session):
     # check user exists
-    userExists: User | None = UserRepo.user_exists(db, req.username)
+    userExists: User | None = UserStore.user_exists(db, req.username)
 
     if userExists:
         raise HTTPException(status_code=400, detail="Username already exists. Try a different one.")
@@ -31,7 +31,7 @@ async def register_controller(req: SignupRequest, db: Session):
 
     # save user to DB
     try:
-        user: User = UserRepo.create_user(db, req.username, hashed_pwd)
+        user: User = UserStore.create_user(db, req.username, hashed_pwd)
         db.commit()
         db.refresh(user)
 
@@ -56,7 +56,7 @@ async def register_controller(req: SignupRequest, db: Session):
 
 async def login_controller(req: LoginRequest, res: Response, db: Session):
     # Verify user exists
-    user: User | None = UserRepo.get_user_by_username(db, req.username)
+    user: User | None = UserStore.get_user_by_username(db, req.username)
     if not user:
         logger.warning("Login failed — unknown user=%s", req.username)
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -80,7 +80,7 @@ async def login_controller(req: LoginRequest, res: Response, db: Session):
     # Store only a SHA-256 hash of the refresh token in the DB.
     token_hash = hash_token(refresh_token)
 
-    RefreshTokenRepo.create(
+    RfTokenStore.create(
         db, user.id, token_hash, datetime.now(UTC) + timedelta(days=AppConfig.refresh_exp_days)
     )
 
@@ -124,7 +124,7 @@ async def logout_controller(req: Request, res: Response, db: Session):
 
     hashed_token = hash_token(refresh_token)
 
-    rf_record: RefreshToken | None = RefreshTokenRepo.get_active_token_by_hash(db, hashed_token)
+    rf_record: RefreshToken | None = RfTokenStore.get_active_token_by_hash(db, hashed_token)
     if not rf_record:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
 
@@ -171,13 +171,13 @@ async def token_refresher_controller(req: Request, res: Response, db: Session):
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid token payload")
 
-    user: User | None = UserRepo.get_user_by_id(db, int(user_id))
+    user: User | None = UserStore.get_user_by_id(db, int(user_id))
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
     # Verify the incoming token against its stored hash
     incoming_hash = hash_token(refresh_token)
-    rf_record: RefreshToken | None = RefreshTokenRepo.get_by_user_and_hash(
+    rf_record: RefreshToken | None = RfTokenStore.get_by_user_and_hash(
         db, user.id, incoming_hash
     )
 
@@ -196,7 +196,7 @@ async def token_refresher_controller(req: Request, res: Response, db: Session):
     new_access_token = create_token(new_payload, TokenType.ACCESS)
     new_refresh_token = create_token(new_payload, TokenType.REFRESH)
 
-    RefreshTokenRepo.create(
+    RfTokenStore.create(
         db,
         user.id,
         hash_token(new_refresh_token),
@@ -233,7 +233,7 @@ async def token_refresher_controller(req: Request, res: Response, db: Session):
 
 async def get_me_controller(access_token: TokenPayload, db: Session):
     user_id = int(access_token.sub)
-    user: User | None = UserRepo.get_user_by_id(db, user_id)
+    user: User | None = UserStore.get_user_by_id(db, user_id)
     if not user:
         logger.warning("User not found for user_id=%s", user_id)
         raise HTTPException(status_code=404, detail="User not found")

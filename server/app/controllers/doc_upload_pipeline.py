@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.logging import logger
 from app.models.document import DocumentStatus
-from app.repositories.thread_repo import DocumentRepo, ThreadRepo
+from app.store.ThreadStore import DocStore, ThreadStore
 from app.schema.authSchema import TokenPayload
 from app.langchain.rag_workflow import RAGWorkflow
 from app.vectorstores.pinecone import get_vector_store
@@ -38,7 +38,7 @@ async def upload_document_controller(
 ):
     user_id = int(access_token.sub)
 
-    thread = ThreadRepo.get_by_id_and_user(db, thread_id, user_id)
+    thread = ThreadStore.get_for_user(db, thread_id, user_id)
     if not thread:
         raise HTTPException(status_code=403, detail="Thread not found or access denied.")
 
@@ -83,7 +83,7 @@ async def upload_document_controller(
             detail="Failed to upload file.",
         )
 
-    document = DocumentRepo.create(
+    document = DocStore.create(
         db,
         thread_id=thread.id,
         filename=file.filename,
@@ -121,12 +121,12 @@ async def get_document_controller(
     user_id = int(access_token.sub)
 
     # Verify the thread belongs to this user
-    thread = ThreadRepo.get_by_id_and_user(db, thread_id, user_id)
+    thread = ThreadStore.get_for_user(db, thread_id, user_id)
     if not thread:
         raise HTTPException(status_code=403, detail="Thread not found or access denied.")
 
     # Fetch the document and ensure it belongs to this thread
-    document = DocumentRepo.get_by_id_and_thread(db, document_id, thread_id)
+    document = DocStore.get_by_id_and_thread(db, document_id, thread_id)
     if not document:
         raise HTTPException(status_code=404, detail="Document not found.")
 
@@ -154,12 +154,12 @@ async def ingest_document(
 ):
     user_id = int(access_token.sub)
 
-    thread = ThreadRepo.get_by_id_and_user(db, thread_id, user_id)
+    thread = ThreadStore.get_for_user(db, thread_id, user_id)
     if not thread:
         raise HTTPException(status_code=403, detail="Thread not found or access denied.")
 
     # Fetch the doc (from Pg DB) and ensure it belongs to this thread
-    doc = DocumentRepo.get_by_id_and_thread(db, document_id, thread_id)
+    doc = DocStore.get_by_id_and_thread(db, document_id, thread_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found.")
 
