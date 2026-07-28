@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 from jwt import encode
 
 from app.core.app_configs import getAppConfig
-from app.schema.authSchema import TokenType
+from app.types import TokenType
 
 AppConfig = getAppConfig()
 

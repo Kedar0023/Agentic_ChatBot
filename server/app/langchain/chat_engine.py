@@ -8,7 +8,7 @@ from langchain_core.messages import (
 
 from app.core.logging import logger
 from app.langchain.llm import get_agent
-from app.schema.chatSchema import Context
+from app.types import Context
 
 # -----------------------------------------------------------------------------------------
 

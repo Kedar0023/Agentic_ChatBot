@@ -5,7 +5,7 @@ from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_core.tools import BaseTool
 
 from app.langchain.rag_workflow import RAGWorkflow
-from app.schema.chatSchema import Context
+from app.types import Context
 
 
 # ---------------------------------------------------------------------------------

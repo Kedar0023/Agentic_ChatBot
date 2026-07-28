@@ -6,7 +6,7 @@ from jwt import ExpiredSignatureError, InvalidTokenError, decode
 from pydantic import ValidationError
 
 from app.core.app_configs import getAppConfig
-from app.schema.authSchema import TokenPayload, TokenType
+from app.types import (TokenPayload, TokenType)
 
 appConfig = getAppConfig()
 

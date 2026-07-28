@@ -3,7 +3,7 @@ from langchain.chat_models import init_chat_model
 
 from app.core.logging import logger
 from app.langchain.tools import get_tools
-from app.schema.chatSchema import Context
+from app.types import Context
 from app.utils.prompts import SYSTEM_PROMPT
 
 AVAILABLE_MODELS: dict[str, dict] = {
