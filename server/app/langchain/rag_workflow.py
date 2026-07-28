@@ -1,26 +1,23 @@
-from app.core.logging import logger
 from functools import lru_cache
-
 from tempfile import NamedTemporaryFile
 
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.documents import Document
-from langchain_voyageai import VoyageAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_voyageai import VoyageAIEmbeddings
 
-from app.vectorstores.pinecone import get_vector_store
 from app.core.app_configs import getAppConfig
+from app.core.logging import logger
+from app.vectorstores.pinecone import get_vector_store
 
 config = getAppConfig()
+
 
 @lru_cache
 def get_embedding_model() -> VoyageAIEmbeddings:
     return VoyageAIEmbeddings(
-        model="voyage-4-lite",
-        api_key=config.voyageai_api_key.get_secret_value(),
-        output_dimension = 512
+        model="voyage-4-lite", api_key=config.voyageai_api_key.get_secret_value(), output_dimension=512
     )
-
 
 
 # ------------------------------------------------------------------------------------------
@@ -109,9 +106,7 @@ class RAGWorkflow:
 
         vecStore = get_vector_store()
 
-        res = vecStore.similarity_search(
-            embedding=query_embedding, top_k=top_k, where={"thread_id": thread_id}
-        )
+        res = vecStore.similarity_search(embedding=query_embedding, top_k=top_k, where={"thread_id": thread_id})
         formatted_res = RAGWorkflow.format_query_results(res)
         return formatted_res
 

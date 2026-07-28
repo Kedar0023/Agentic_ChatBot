@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.orm import Session
 
+from app.controllers import auth
 from app.core.middleware import authenticate_user
 from app.database.db import get_db
 from app.schema.authSchema import (
@@ -13,7 +14,6 @@ from app.schema.authSchema import (
     TokenPayload,
     UserResponse,
 )
-from app.controllers import auth
 
 router = APIRouter(prefix="/v1/auth")
 
@@ -51,10 +51,10 @@ async def logout(req: Request, res: Response, db: Annotated[Session, Depends(get
 
 # --------------------------------------------------------------------------------
 
+
 @router.get("/me", status_code=200, response_model=UserResponse)
 async def get_me(
     access_token: Annotated[TokenPayload, Depends(authenticate_user)],
     db: Annotated[Session, Depends(get_db)],
 ):
     return await auth.get_me_controller(access_token, db)
-

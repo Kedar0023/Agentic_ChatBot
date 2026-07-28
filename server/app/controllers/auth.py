@@ -10,9 +10,9 @@ from sqlalchemy.orm import Session
 from app.core.app_configs import getAppConfig
 from app.core.logging import logger
 from app.models.user import RefreshToken, User
+from app.schema.authSchema import LoginRequest, SignupRequest, TokenPayload, TokenType
 from app.store.TokenStore import RfTokenStore
 from app.store.UserStore import UserStore
-from app.schema.authSchema import LoginRequest, SignupRequest, TokenPayload, TokenType
 from app.utils.security import create_token, hash_token
 
 AppConfig = getAppConfig()
@@ -40,13 +40,9 @@ async def register_controller(req: SignupRequest, db: Session):
         if isinstance(e, IntegrityError):
             # Guard against race-condition duplicate inserts
             logger.warning("Registration integrity conflict for user=%s", req.username)
-            raise HTTPException(
-                status_code=400, detail="Username already exists or invalid data provided."
-            )
+            raise HTTPException(status_code=400, detail="Username already exists or invalid data provided.")
         logger.error("Registration failed for user=%s", req.username, exc_info=True)
-        raise HTTPException(
-            status_code=500, detail="An unexpected error occurred during registration."
-        )
+        raise HTTPException(status_code=500, detail="An unexpected error occurred during registration.")
     logger.info("User registered user_id=%s", user.id)
     return {"message": "User registered successfully", "userId": str(user.id)}
 
@@ -80,9 +76,7 @@ async def login_controller(req: LoginRequest, res: Response, db: Session):
     # Store only a SHA-256 hash of the refresh token in the DB.
     token_hash = hash_token(refresh_token)
 
-    RfTokenStore.create(
-        db, user.id, token_hash, datetime.now(UTC) + timedelta(days=AppConfig.refresh_exp_days)
-    )
+    RfTokenStore.create(db, user.id, token_hash, datetime.now(UTC) + timedelta(days=AppConfig.refresh_exp_days))
 
     try:
         db.commit()
@@ -177,9 +171,7 @@ async def token_refresher_controller(req: Request, res: Response, db: Session):
 
     # Verify the incoming token against its stored hash
     incoming_hash = hash_token(refresh_token)
-    rf_record: RefreshToken | None = RfTokenStore.get_by_user_and_hash(
-        db, user.id, incoming_hash
-    )
+    rf_record: RefreshToken | None = RfTokenStore.get_by_user_and_hash(db, user.id, incoming_hash)
 
     if not rf_record:
         raise HTTPException(status_code=401, detail="Refresh token not recognised")
@@ -244,4 +236,3 @@ async def get_me_controller(access_token: TokenPayload, db: Session):
         "username": user.username,
         "is_active": user.is_active,
     }
-

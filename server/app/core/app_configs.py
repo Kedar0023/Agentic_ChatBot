@@ -11,7 +11,7 @@ ENV_FILE = Path(__file__).parent.parent.parent / ".env"
 class AppConfigs(BaseSettings):
     app_name: str = "Fastapi_chatbot"
     app_env: str = "fast_env"
-    database_url: SecretStr 
+    database_url: SecretStr
     cors_origins: str
     jwt_secret_key: SecretStr
     jwt_algorithm: str
@@ -30,8 +30,6 @@ class AppConfigs(BaseSettings):
     pinecone_index: SecretStr
 
     voyageai_api_key: SecretStr
-
-
 
     model_config = SettingsConfigDict(env_file=str(ENV_FILE))
 

@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
-from app.models.user import User
 from app.models.chats import Thread
+from app.models.user import User
 
 
 class UserStore:
@@ -50,5 +50,3 @@ class UserStore:
             for thread_id, title in rows
             if title
         ]
-
-

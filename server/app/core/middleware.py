@@ -16,9 +16,7 @@ oauth_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 # -------------------------------------------------------------------------------
 def decode_access_token(token: str) -> TokenPayload:
     try:
-        decoded_token = decode(
-            token, appConfig.jwt_secret_key.get_secret_value(), algorithms=[appConfig.jwt_algorithm]
-        )
+        decoded_token = decode(token, appConfig.jwt_secret_key.get_secret_value(), algorithms=[appConfig.jwt_algorithm])
         return TokenPayload.model_validate(decoded_token)
 
     except ValidationError:
@@ -34,7 +32,6 @@ def decode_access_token(token: str) -> TokenPayload:
 # -------------------------------------------------------------------------------
 def authenticate_user(token: Annotated[str, Depends(oauth_scheme)]) -> TokenPayload:
     payload = decode_access_token(token)
-
 
     if payload.type != TokenType.ACCESS:
         raise HTTPException(status_code=401, detail="Access token required")

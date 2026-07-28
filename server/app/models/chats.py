@@ -41,9 +41,7 @@ class Thread(Base):
         cascade="all, delete-orphan",
     )
 
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(UTC)
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -92,9 +90,7 @@ class Message(Base):
 
     content: Mapped[str] = mapped_column(Text)
 
-    status: Mapped[MessageStatus] = mapped_column(
-        SQLEnum(MessageStatus, name="message_status"), nullable=False
-    )
+    status: Mapped[MessageStatus] = mapped_column(SQLEnum(MessageStatus, name="message_status"), nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

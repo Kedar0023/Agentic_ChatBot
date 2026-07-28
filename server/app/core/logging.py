@@ -1,12 +1,10 @@
 import logging
 import sys
+
 # from pathlib import Path
 # Path("logs").mkdir(exist_ok=True)
 
-LOG_FORMAT = (
-    "%(asctime)s | %(levelname)s | %(name)s | "
-    "%(filename)s:%(lineno)d | %(message)s"
-)
+LOG_FORMAT = "%(asctime)s | %(levelname)s | %(name)s | %(filename)s:%(lineno)d | %(message)s"
 
 formatter = logging.Formatter(LOG_FORMAT)
 

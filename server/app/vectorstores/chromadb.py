@@ -20,9 +20,7 @@ class ChromaVectorStore:
 
         self.client = chromadb.PersistentClient(path=str(db_path))
 
-        self.collection: Collection = self.client.get_or_create_collection(
-            name=config.chroma_collection_name
-        )
+        self.collection: Collection = self.client.get_or_create_collection(name=config.chroma_collection_name)
 
     def add_documents(
         self,

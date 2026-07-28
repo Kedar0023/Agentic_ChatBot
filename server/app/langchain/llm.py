@@ -1,11 +1,10 @@
 from langchain.agents import create_agent
 from langchain.chat_models import init_chat_model
 
-from app.langchain.tools import get_tools
-from app.utils.prompts import SYSTEM_PROMPT
-from app.schema.chatSchema import Context
 from app.core.logging import logger
-
+from app.langchain.tools import get_tools
+from app.schema.chatSchema import Context
+from app.utils.prompts import SYSTEM_PROMPT
 
 AVAILABLE_MODELS: dict[str, dict] = {
     "qwen3:4b": {
@@ -29,7 +28,8 @@ DEFAULT_MODEL = "qwen3:4b"
 
 agent_cache: dict[str, object] = {}
 
-#---------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------
+
 
 def get_agent(llm_model: str | None = None):
     """Return an agent executor for the given model slug (cached)."""

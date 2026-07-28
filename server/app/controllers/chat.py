@@ -5,17 +5,17 @@ from collections.abc import AsyncGenerator
 
 from fastapi import HTTPException
 from langchain_core.messages import AIMessage, HumanMessage
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import Session
-from app.core.logging import logger
-from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 
+from app.core.logging import logger
 from app.langchain.chat_engine import ChatEngine
-from app.langchain.llm import DEFAULT_MODEL, AVAILABLE_MODELS, list_models
+from app.langchain.llm import AVAILABLE_MODELS, DEFAULT_MODEL, list_models
 from app.models.chats import Message, MessageRole, MessageStatus
+from app.schema.authSchema import TokenPayload
 from app.store.MessageStore import MessageStore
 from app.store.ThreadStore import ThreadStore
 from app.store.UserStore import UserStore
-from app.schema.authSchema import TokenPayload
 
 CHAT_LIMIT = 20
 
@@ -184,7 +184,6 @@ async def generator(
 
 # Return the catalog of available models and the thread's current selection.
 async def get_thread_models_controller(thread_id: str, access_token: TokenPayload, db: Session):
-
     thread = ThreadStore.get_for_user(db, thread_id, access_token.sub)
     if not thread:
         raise HTTPException(status_code=403, detail="Forbidden")
@@ -195,7 +194,8 @@ async def get_thread_models_controller(thread_id: str, access_token: TokenPayloa
         "models": list_models(),
     }
 
-#---------------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------------
 async def update_thread_model_controller(thread_id: str, llm_model: str, access_token: TokenPayload, db: Session):
     if llm_model not in AVAILABLE_MODELS:
         raise HTTPException(
@@ -228,7 +228,9 @@ async def update_thread_model_controller(thread_id: str, llm_model: str, access_
         "model": thread.llm_model,
     }
 
-#---------------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------------
+
 
 async def get_all_thread_titles_controller(access_token: TokenPayload, db: Session) -> list[dict[str, str]]:
     try:
@@ -294,9 +296,7 @@ async def update_thread_title_controller(
 # ---------------------------------------------------------------------------------
 
 
-async def delete_chat_thread_controller(
-    thread_id: str, access_token: TokenPayload, db: Session
-) -> dict[str, str]:
+async def delete_chat_thread_controller(thread_id: str, access_token: TokenPayload, db: Session) -> dict[str, str]:
     try:
         user_id = int(access_token.sub)
     except (ValueError, TypeError):
@@ -322,7 +322,3 @@ async def delete_chat_thread_controller(
 
     logger.info("Thread deleted thread_id=%s user_id=%s", thread_id, user_id)
     return {"message": "Thread deleted successfully", "thread_id": thread_id}
-
-
-
-

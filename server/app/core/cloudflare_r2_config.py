@@ -8,11 +8,11 @@ from app.core.app_configs import getAppConfig
 
 R2_CONFIG = Config(
     signature_version="s3v4",  # Required authentication method for Cloudflare R2 (AWS Signature Version 4)
-    connect_timeout=5,         # Wait up to 5 seconds to establish a connection
-    read_timeout=60,           # Wait up to 60 seconds for data after the connection is established
+    connect_timeout=5,  # Wait up to 5 seconds to establish a connection
+    read_timeout=60,  # Wait up to 60 seconds for data after the connection is established
     retries={
-        "max_attempts": 5,     # Retry failed requests up to 5 times (helps with transient network issues)
-        "mode": "standard",    # AWS recommended retry strategy with exponential backoff
+        "max_attempts": 5,  # Retry failed requests up to 5 times (helps with transient network issues)
+        "mode": "standard",  # AWS recommended retry strategy with exponential backoff
     },
 )
 

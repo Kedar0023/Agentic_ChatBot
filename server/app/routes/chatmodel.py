@@ -2,14 +2,14 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import Session
-from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 
+from app.controllers import chat
 from app.core.middleware import authenticate_user
-from app.database.db import get_db , get_async_db_session
+from app.database.db import get_async_db_session, get_db
 from app.schema.authSchema import TokenPayload
 from app.schema.chatSchema import ChatRequest, UpdateModelRequest, UpdateTitleRequest
-from app.controllers import chat
 
 router = APIRouter(prefix="/v1/chat")
 
@@ -55,11 +55,9 @@ async def chat_(
     thread_id: str,
     access_token: Annotated[TokenPayload, Depends(authenticate_user)],
     db: Annotated[Session, Depends(get_db)],
-    async_db_session: Annotated[async_sessionmaker[AsyncSession],Depends(get_async_db_session)]
+    async_db_session: Annotated[async_sessionmaker[AsyncSession], Depends(get_async_db_session)],
 ):
-    lc_history, ai_msg, llm_model = await chat.authenticated_chat_controller_2(
-        req.prompt, thread_id, access_token, db
-    )
+    lc_history, ai_msg, llm_model = await chat.authenticated_chat_controller_2(req.prompt, thread_id, access_token, db)
     db.expunge(ai_msg)  # detach — ai_msg must not stay bound to the sync session
 
     return StreamingResponse(
@@ -74,6 +72,7 @@ async def chat_(
 
 # ---------------------------------------------------------------------------------
 
+
 @router.get("/base/get_messages/{thread_id}", status_code=200)
 async def get_messages(
     thread_id: str,
@@ -86,6 +85,7 @@ async def get_messages(
 # Model selection endpoints
 # ---------------------------------------------------------------------------------
 
+
 @router.get("/base/{thread_id}/models", status_code=200)
 async def get_thread_models(
     thread_id: str,
@@ -93,6 +93,7 @@ async def get_thread_models(
     db: Annotated[Session, Depends(get_db)],
 ):
     return await chat.get_thread_models_controller(thread_id, access_token, db)
+
 
 # ---------------------------------------------------------------------------------
 
@@ -104,11 +105,11 @@ async def update_thread_model(
     access_token: Annotated[TokenPayload, Depends(authenticate_user)],
     db: Annotated[Session, Depends(get_db)],
 ):
-    return await chat.update_thread_model_controller(
-        thread_id, req.model, access_token, db
-    )
+    return await chat.update_thread_model_controller(thread_id, req.model, access_token, db)
 
-#---------------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------------
+
 
 @router.get("/base/get_all_thread_titles", response_model=list[dict[str, str]], status_code=200)
 async def get_all_thread_titles(
@@ -120,6 +121,7 @@ async def get_all_thread_titles(
 
 # ---------------------------------------------------------------------------------
 
+
 @router.patch("/base/{thread_id}/title", status_code=200)
 async def update_thread_title(
     thread_id: str,
@@ -127,9 +129,7 @@ async def update_thread_title(
     access_token: Annotated[TokenPayload, Depends(authenticate_user)],
     db: Annotated[Session, Depends(get_db)],
 ):
-    return await chat.update_thread_title_controller(
-        thread_id, req.title, access_token, db
-    )
+    return await chat.update_thread_title_controller(thread_id, req.title, access_token, db)
 
 
 # ---------------------------------------------------------------------------------
@@ -142,6 +142,3 @@ async def delete_chat_thread(
     db: Annotated[Session, Depends(get_db)],
 ):
     return await chat.delete_chat_thread_controller(thread_id, access_token, db)
-
-
-

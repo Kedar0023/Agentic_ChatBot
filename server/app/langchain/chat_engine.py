@@ -1,15 +1,14 @@
 from langchain_core.messages import (
     AIMessage,
+    AIMessageChunk,
     HumanMessage,
     SystemMessage,
-    AIMessageChunk,
     ToolMessage,
 )
-from app.schema.chatSchema import Context
 
 from app.core.logging import logger
 from app.langchain.llm import get_agent
-
+from app.schema.chatSchema import Context
 
 # -----------------------------------------------------------------------------------------
 
@@ -48,9 +47,7 @@ class ChatEngine:
         messages = ChatEngine.compose_chat_messages(history, prompt)
         agent = get_agent(llm_model)
         try:
-            res = await agent.ainvoke(
-                {"messages": messages}, context=Context(thread_id=thread_id)
-            )
+            res = await agent.ainvoke({"messages": messages}, context=Context(thread_id=thread_id))
             return res["messages"][-1].content
         except Exception as e:
             logger.error("invoke failed: %s", e, exc_info=True)

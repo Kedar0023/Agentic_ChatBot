@@ -1,17 +1,16 @@
-from langchain.tools import tool, ToolRuntime
 import re
 
-from app.langchain.rag_workflow import RAGWorkflow
+from langchain.tools import ToolRuntime, tool
 from langchain_community.tools import DuckDuckGoSearchRun
-from app.schema.chatSchema import Context
 from langchain_core.tools import BaseTool
+
+from app.langchain.rag_workflow import RAGWorkflow
+from app.schema.chatSchema import Context
 
 
 # ---------------------------------------------------------------------------------
 @tool
-def retrieve_relevant_chunks(
-    query: str, runtime: ToolRuntime[Context], top_k: int = 5
-) -> list[dict]:
+def retrieve_relevant_chunks(query: str, runtime: ToolRuntime[Context], top_k: int = 5) -> list[dict]:
     """Search the user's uploaded document(s) for content relevant to their question.
     Only call this if the question likely requires info from the uploaded file(s)."""
 
@@ -19,6 +18,7 @@ def retrieve_relevant_chunks(
     if not RAGWorkflow.thread_has_documents(thread_id):
         return [{"error": "No documents found for this thread."}]
     return RAGWorkflow.retrieve_relevant_chunks(query=query, thread_id=thread_id, top_k=top_k)
+
 
 # ---------------------------------------------------------------------------------
 
@@ -30,6 +30,7 @@ BLOCKED_TERMS = re.compile(
     r"payload|phishing|dox|crack)\b",
     re.IGNORECASE,
 )
+
 
 @tool
 def guarded_search(query: str) -> str:
@@ -44,7 +45,9 @@ def guarded_search(query: str) -> str:
 
     return result
 
+
 # ---------------------------------------------------------------------------------
+
 
 def get_tools() -> list[BaseTool]:
     return [retrieve_relevant_chunks, guarded_search]

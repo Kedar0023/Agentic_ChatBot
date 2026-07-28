@@ -1,6 +1,7 @@
 from functools import lru_cache
 
 from pinecone import Pinecone
+
 from app.core.app_configs import getAppConfig
 
 config = getAppConfig()

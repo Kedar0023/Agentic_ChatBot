@@ -82,9 +82,7 @@ def upgrade() -> None:
         "messages",
         sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("thread_id", sa.Uuid(), nullable=False),
-        sa.Column(
-            "role", sa.Enum("USER", "ASSISTANT", "SYSTEM", name="message_role"), nullable=False
-        ),
+        sa.Column("role", sa.Enum("USER", "ASSISTANT", "SYSTEM", name="message_role"), nullable=False),
         sa.Column("content", sa.Text(), nullable=False),
         sa.Column(
             "status",

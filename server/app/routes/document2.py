@@ -1,11 +1,13 @@
 import uuid
-from pathlib import Path
+from typing import Annotated
 
-from fastapi import HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.core.logging import logger
+from app.core.middleware import authenticate_user
+from app.database.db import get_db
 from app.langchain.rag_workflow import RAGWorkflow
 from app.models.document import DocumentStatus
 from app.schema.authSchema import TokenPayload
@@ -13,8 +15,7 @@ from app.services.cloudflare_r2 import delete_file, get_downloadable_file, uploa
 from app.store.ThreadStore import DocStore, ThreadStore
 from app.vectorstores.pinecone import get_vector_store
 
-# ---------------------------------------------------------------------------
-S3_ROOT = Path(__file__).resolve().parent.parent.parent.parent / "s3"
+router = APIRouter(prefix="/v2/thread/{thread_id}", tags=["document"])
 
 # Max upload size: 20 MB
 MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024
@@ -29,14 +30,19 @@ ALLOWED_CONTENT_TYPES = {
 
 
 # ---------------------------------------------------------------------------
-# Key layout:  s3/<user_id>/<thread_id>/<doc_id>/<original_filename>
-async def upload_document_controller(
+
+
+@router.post("/upload", status_code=201)
+async def upload_document(
     thread_id: str,
-    access_token: TokenPayload,
-    db: Session,
-    file: UploadFile,
+    access_token: Annotated[TokenPayload, Depends(authenticate_user)],
+    db: Annotated[Session, Depends(get_db)],
+    file: UploadFile = File(...),
 ):
-    user_id = int(access_token.sub)
+    try:
+        user_id = int(access_token.sub)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="Invalid user ID in token payload.")
 
     thread = ThreadStore.get_for_user(db, thread_id, user_id)
     if not thread:
@@ -110,15 +116,18 @@ async def upload_document_controller(
     }
 
 
-# ---------------------------------------------------------------------------
-#     Returns the file from local S3 storage as a downloadable response.
-async def get_document_controller(
+# Returns the file from local S3 storage as a downloadable response.
+@router.get("/docs/{document_id}", status_code=200)
+async def get_document(
     thread_id: str,
     document_id: str,
-    access_token: TokenPayload,
-    db: Session,
+    access_token: Annotated[TokenPayload, Depends(authenticate_user)],
+    db: Annotated[Session, Depends(get_db)],
 ):
-    user_id = int(access_token.sub)
+    try:
+        user_id = int(access_token.sub)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="Invalid user ID in token payload.")
 
     # Verify the thread belongs to this user
     thread = ThreadStore.get_for_user(db, thread_id, user_id)
@@ -142,17 +151,17 @@ async def get_document_controller(
     )
 
 
-# ---------------------------------------------------------------------------
-#     POST  /chat/{thread_id}/documents/{document_id}/process
-#     Loads the PDF, splits into chunks, embeds, and stores in vector DB.
-# ---------------------------------------------------------------------------
-async def ingest_document(
+@router.post("/docs/{document_id}/ingest", status_code=200)
+async def process_document(
     thread_id: str,
     document_id: str,
-    access_token: TokenPayload,
-    db: Session,
+    access_token: Annotated[TokenPayload, Depends(authenticate_user)],
+    db: Annotated[Session, Depends(get_db)],
 ):
-    user_id = int(access_token.sub)
+    try:
+        user_id = int(access_token.sub)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="Invalid user ID in token payload.")
 
     thread = ThreadStore.get_for_user(db, thread_id, user_id)
     if not thread:

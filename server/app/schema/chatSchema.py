@@ -1,7 +1,8 @@
+from dataclasses import dataclass
 from typing import Literal
 
 from pydantic import BaseModel, Field
-from dataclasses import dataclass
+
 
 class MessageEntry(BaseModel):
     role: Literal["human", "ai"]

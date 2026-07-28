@@ -20,9 +20,7 @@ class ThreadStore:
         return db.query(Thread).filter(Thread.id == thread_id, Thread.user_id == user_id).first()
 
     @staticmethod
-    def update_metadata(
-        thread: Thread, title: str | None = None, llm_model: str | None = None
-    ) -> None:
+    def update_metadata(thread: Thread, title: str | None = None, llm_model: str | None = None) -> None:
         if thread.title is None and title is not None:
             thread.title = title
         if thread.llm_model is None and llm_model is not None:
@@ -39,7 +37,6 @@ class ThreadStore:
     @staticmethod
     def delete(db: Session, thread: Thread) -> None:
         db.delete(thread)
-
 
 
 class DocStore:
@@ -73,8 +70,4 @@ class DocStore:
 
     @staticmethod
     def get_by_id_and_thread(db: Session, document_id: str, thread_id: str) -> Document | None:
-        return (
-            db.query(Document)
-            .filter(Document.id == document_id, Document.thread_id == thread_id)
-            .first()
-        )
+        return db.query(Document).filter(Document.id == document_id, Document.thread_id == thread_id).first()

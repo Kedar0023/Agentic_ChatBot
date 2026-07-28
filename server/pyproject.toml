@@ -39,7 +39,7 @@ target-version = "py313"
 select = [
     "E",
     "F",
-    # "I",
+    "I",
     "UP",
 ]
 ignore = ["E302", "E303", "E305"]

@@ -20,12 +20,7 @@ class MessageStore:
 
     @staticmethod
     def get_ordered_msgs_by_thread_id(db: Session, thread_id: str) -> list[Message]:
-        return (
-            db.query(Message)
-            .filter(Message.thread_id == thread_id)
-            .order_by(Message.created_at)
-            .all()
-        )
+        return db.query(Message).filter(Message.thread_id == thread_id).order_by(Message.created_at).all()
 
     @staticmethod
     def update_message(msg: Message, status: MessageStatus, content: str | None = None) -> None:

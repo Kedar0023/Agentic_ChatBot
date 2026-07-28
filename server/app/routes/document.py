@@ -1,19 +1,12 @@
-# POST/api/threads/{thread_id}/documents
-# GET/api/threads/{thread_id}/documents/{document_id}/status
-# GET/api/threads/{thread_id}/documents
-# DELETE/api/threads/{thread_id}/documents/{document_id}
-# POST/api/threads/{thread_id}/documents/{document_id}/reprocess
-# POST/api/threads/{thread_id}/documents/{document_id}/process
-
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, UploadFile
 from sqlalchemy.orm import Session
 
+from app.controllers import doc_upload_pipeline as document
 from app.core.middleware import authenticate_user
 from app.database.db import get_db
 from app.schema.authSchema import TokenPayload
-from app.controllers import doc_upload_pipeline as document
 
 router = APIRouter(prefix="/v1/chat/{thread_id}")
 
