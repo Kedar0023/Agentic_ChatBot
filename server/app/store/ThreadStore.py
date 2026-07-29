@@ -71,3 +71,12 @@ class DocStore:
     @staticmethod
     def get_by_id_and_thread(db: Session, document_id: str, thread_id: str) -> Document | None:
         return db.query(Document).filter(Document.id == document_id, Document.thread_id == thread_id).first()
+
+    @staticmethod
+    def get_all_by_thread(db: Session, thread_id: str) -> list[Document]:
+        return db.query(Document).filter(Document.thread_id == thread_id).all()
+
+    @staticmethod
+    def delete(db: Session, document: Document) -> None:
+        db.delete(document)
+

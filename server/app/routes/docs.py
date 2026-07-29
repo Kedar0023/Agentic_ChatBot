@@ -254,3 +254,99 @@ async def process_document(
             "total_chunks": total_chunks,
         },
     }
+
+
+# ---------------------------------------------------------------------------
+
+
+@router.get("/docs", status_code=200)
+async def get_all_documents(
+    thread_id: str,
+    access_token: Annotated[TokenPayload, Depends(authenticate_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    try:
+        user_id = int(access_token.sub)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="Invalid user ID in token payload.")
+
+    thread = ThreadStore.get_for_user(db, thread_id, user_id)
+    if not thread:
+        raise HTTPException(status_code=403, detail="Thread not found or access denied.")
+
+    docs = DocStore.get_all_by_thread(db, thread_id)
+
+    return {
+        "documents": [
+            {
+                "id": str(doc.id),
+                "thread_id": str(doc.thread_id),
+                "filename": doc.filename,
+                "content_type": doc.content_type,
+                "file_size_bytes": doc.file_size_bytes,
+                "status": doc.status.value if isinstance(doc.status, DocumentStatus) else doc.status,
+                "created_at": doc.created_at.isoformat() if doc.created_at else None,
+                "updated_at": doc.updated_at.isoformat() if doc.updated_at else None,
+            }
+            for doc in docs
+        ]
+    }
+
+
+# ---------------------------------------------------------------------------
+
+
+@router.delete("/docs/{doc_id}", status_code=200)
+async def delete_document(
+    thread_id: str,
+    doc_id: str,
+    access_token: Annotated[TokenPayload, Depends(authenticate_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    try:
+        user_id = int(access_token.sub)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="Invalid user ID in token payload.")
+
+    thread = ThreadStore.get_for_user(db, thread_id, user_id)
+    if not thread:
+        raise HTTPException(status_code=403, detail="Thread not found or access denied.")
+
+    doc = DocStore.get_by_id_and_thread(db, doc_id, thread_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found.")
+
+    # Delete vectors associated with this document
+    try:
+        vector_store = get_vector_store()
+        vector_store.delete(where={"document_id": str(doc.id)})
+    except Exception:
+        logger.error("Failed to delete vectors for doc_id=%s", doc_id, exc_info=True)
+
+    # Delete physical file from Cloudflare R2
+    try:
+        delete_file(key=doc.s3_key)
+    except Exception:
+        logger.error("Failed to delete R2 file key=%s", doc.s3_key, exc_info=True)
+
+    # Delete record from database
+    try:
+        DocStore.delete(db, doc)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        logger.error("Document deletion failed doc_id=%s", doc_id, exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "message": "Failed to delete document.",
+                "error": str(e.__cause__ or e),
+            },
+        )
+
+    logger.info("Document deleted doc_id=%s thread_id=%s user_id=%s", doc_id, thread_id, user_id)
+    return {
+        "message": "Document deleted successfully.",
+        "doc_id": doc_id,
+    }
+

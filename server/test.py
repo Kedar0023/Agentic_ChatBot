@@ -558,6 +558,107 @@ class DocumentAPITestCase(BaseAPITestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("Only PDF documents can be processed", response.json()["detail"])
 
+    @patch("app.routes.docs.upload_file")
+    def test_get_all_documents_success(self, mock_upload):
+        mock_upload.return_value = None
+        token, _, _ = self.register_and_login("getalldocsuser", "password123")
+        res = self.client.post("/v2/thread/create", headers={"Authorization": f"Bearer {token}"})
+        thread_id = res.json()["thread_id"]
+
+        files = {"file": ("sample.pdf", io.BytesIO(b"%PDF-1.4 content"), "application/pdf")}
+        self.client.post(
+            f"/v2/thread/{thread_id}/upload",
+            files=files,
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        response = self.client.get(
+            f"/v2/thread/{thread_id}/docs",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("documents", data)
+        self.assertEqual(len(data["documents"]), 1)
+        self.assertEqual(data["documents"][0]["filename"], "sample.pdf")
+
+    def test_get_all_documents_forbidden(self):
+        token1, _, _ = self.register_and_login("docowner1", "password123")
+        token2, _, _ = self.register_and_login("docowner2", "password123")
+
+        res = self.client.post("/v2/thread/create", headers={"Authorization": f"Bearer {token1}"})
+        thread_id = res.json()["thread_id"]
+
+        response = self.client.get(
+            f"/v2/thread/{thread_id}/docs",
+            headers={"Authorization": f"Bearer {token2}"},
+        )
+        self.assertEqual(response.status_code, 403)
+
+    @patch("app.routes.docs.delete_file")
+    @patch("app.routes.docs.get_vector_store")
+    @patch("app.routes.docs.upload_file")
+    def test_delete_document_success(self, mock_upload, mock_vector_store, mock_delete_file):
+        mock_upload.return_value = None
+        mock_delete_file.return_value = None
+        mock_vs = MagicMock()
+        mock_vector_store.return_value = mock_vs
+
+        token, _, _ = self.register_and_login("deldocuser", "password123")
+        res = self.client.post("/v2/thread/create", headers={"Authorization": f"Bearer {token}"})
+        thread_id = res.json()["thread_id"]
+
+        files = {"file": ("file_to_del.pdf", io.BytesIO(b"%PDF-1.4 content"), "application/pdf")}
+        self.client.post(
+            f"/v2/thread/{thread_id}/upload",
+            files=files,
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        db = TestingSessionLocal()
+        doc = db.query(Document).first()
+        doc_id = str(doc.id)
+        db.close()
+
+        response = self.client.delete(
+            f"/v2/thread/{thread_id}/docs/{doc_id}",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["message"], "Document deleted successfully.")
+
+        db = TestingSessionLocal()
+        deleted_doc = db.query(Document).filter(Document.id == doc_id).first()
+        self.assertIsNone(deleted_doc)
+        db.close()
+
+    def test_delete_document_not_found(self):
+        token, _, _ = self.register_and_login("delnotfounduser", "password123")
+        res = self.client.post("/v2/thread/create", headers={"Authorization": f"Bearer {token}"})
+        thread_id = res.json()["thread_id"]
+
+        fake_doc_id = "00000000-0000-0000-0000-000000000000"
+        response = self.client.delete(
+            f"/v2/thread/{thread_id}/docs/{fake_doc_id}",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_delete_document_forbidden(self):
+        token1, _, _ = self.register_and_login("delforbid1", "password123")
+        token2, _, _ = self.register_and_login("delforbid2", "password123")
+
+        res = self.client.post("/v2/thread/create", headers={"Authorization": f"Bearer {token1}"})
+        thread_id = res.json()["thread_id"]
+
+        fake_doc_id = "00000000-0000-0000-0000-000000000000"
+        response = self.client.delete(
+            f"/v2/thread/{thread_id}/docs/{fake_doc_id}",
+            headers={"Authorization": f"Bearer {token2}"},
+        )
+        self.assertEqual(response.status_code, 403)
+
 
 if __name__ == "__main__":
     unittest.main()
+
