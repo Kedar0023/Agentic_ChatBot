@@ -27,6 +27,8 @@ CHAT_LIMIT = 20
 router = APIRouter(prefix="/v2/chat", tags=["chat"])
 AppConfig = getAppConfig()
 
+active_tasks: dict[str, asyncio.Task] = {}
+
 
 async def anonymous_chat_generator(history: list[dict], prompt: str) -> AsyncGenerator[str]:
     if history and len(history) >= CHAT_LIMIT:
@@ -56,6 +58,10 @@ async def generator(
     parts: list[str] = []
     status = MessageStatus.COMPLETE
 
+    current_task = asyncio.current_task()
+    if current_task and thread_id:
+        active_tasks[thread_id] = current_task
+
     # Stream the response
     logger.info("Stream started thread_id=%s model=%s", thread_id, llm_model)
     try:
@@ -74,6 +80,9 @@ async def generator(
         raise
 
     finally:
+        if current_task and active_tasks.get(thread_id) == current_task:
+            active_tasks.pop(thread_id, None)
+
         full_response = "".join(parts)
 
         async with async_db_session() as db:
@@ -185,3 +194,48 @@ async def chat_(
             "X-Accel-Buffering": "no",
         },
     )
+
+
+# ------------------------------------------------------------------------------
+
+
+@router.post("/{thread_id}/stop", status_code=200)
+async def stop_chat_stream(
+    thread_id: str,
+    access_token: Annotated[TokenPayload, Depends(authenticate_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    try:
+        user_id = int(access_token.sub)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="Invalid user ID in token payload.")
+
+    thread = ThreadStore.get_for_user(db, thread_id, user_id)
+    if not thread:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    task = active_tasks.get(thread_id)
+    if task and not task.done():
+        task.cancel()
+        logger.info("Chat stream cancelled thread_id=%s user_id=%s", thread_id, user_id)
+
+    # Clean up any lingering STREAMING messages in DB
+    streaming_msgs = (
+        db.query(Message)
+        .filter(Message.thread_id == thread_id, Message.status == MessageStatus.STREAMING)
+        .all()
+    )
+    if streaming_msgs:
+        for msg in streaming_msgs:
+            MessageStore.update_message(msg, MessageStatus.CANCELLED)
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+            logger.error("Failed to update streaming message status to CANCELLED thread_id=%s", thread_id, exc_info=True)
+
+    return {
+        "message": "Chat generation stopped successfully.",
+        "thread_id": thread_id,
+    }
+

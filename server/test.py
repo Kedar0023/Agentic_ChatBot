@@ -390,8 +390,35 @@ class ChatAPITestCase(BaseAPITestCase):
         )
         self.assertEqual(response.status_code, 403)
 
+    def test_stop_chat_success(self):
+        token, _, _ = self.register_and_login("stopuser", "password123")
+        res = self.client.post("/v2/thread/create", headers={"Authorization": f"Bearer {token}"})
+        thread_id = res.json()["thread_id"]
+
+        response = self.client.post(
+            f"/v2/chat/{thread_id}/stop",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["message"], "Chat generation stopped successfully.")
+        self.assertEqual(response.json()["thread_id"], thread_id)
+
+    def test_stop_chat_forbidden(self):
+        token1, _, _ = self.register_and_login("stopuser1", "password123")
+        token2, _, _ = self.register_and_login("stopuser2", "password123")
+
+        res = self.client.post("/v2/thread/create", headers={"Authorization": f"Bearer {token1}"})
+        thread_id = res.json()["thread_id"]
+
+        response = self.client.post(
+            f"/v2/chat/{thread_id}/stop",
+            headers={"Authorization": f"Bearer {token2}"},
+        )
+        self.assertEqual(response.status_code, 403)
+
 
 class DocumentAPITestCase(BaseAPITestCase):
+
     """Tests for /v2/thread/{thread_id}/upload, download, and ingest endpoints."""
 
     @patch("app.routes.docs.upload_file")

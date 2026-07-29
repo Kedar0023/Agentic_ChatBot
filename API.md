@@ -39,6 +39,7 @@
 | :--- | :--- | :--- | :--- |
 | `POST /v2/chat/anonymous` | Free unauthenticated SSE chat stream (max 20 msgs) | Body: `{ "prompt": "str", "history": [ { "role": "human\|ai", "content": "str" } ] }` | SSE Stream (`text/event-stream`) |
 | `POST /v2/chat/{thread_id}` | Authenticated persistent SSE chat stream | Path: `thread_id`, Header: `Authorization: Bearer <token>`, Body: `{ "prompt": "str", "llm_model"?: "str", "history"?: [...] }` | SSE Stream (`text/event-stream`) |
+| `POST /v2/chat/{thread_id}/stop` | Stop active chat generation stream for a thread | Path: `thread_id`, Header: `Authorization: Bearer <token>` | `{ "message": "str", "thread_id": "str" }` |
 
 ---
 
@@ -47,29 +48,10 @@
 | Endpoint | Info | Input Schema | Output Schema |
 | :--- | :--- | :--- | :--- |
 | `POST /v2/thread/{thread_id}/upload` | Upload document (PDF, TXT, MD, CSV, DOCX <= 20MB) | Path: `thread_id`, Header: `Authorization: Bearer <token>`, Form: `file` | `{ "message": "str" }` |
+| `GET /v2/thread/{thread_id}/docs` | List all documents uploaded to a thread | Path: `thread_id`, Header: `Authorization: Bearer <token>` | `{ "documents": [ { "id": "str", "thread_id": "str", "filename": "str","content_type": "str", "file_size_bytes": 0, "status": "str", "created_at": "str", "updated_at": "str" } ] }` |
 | `GET /v2/thread/{thread_id}/docs/{document_id}` | Download stored document | Path: `thread_id`, `document_id`, Header: `Authorization: Bearer <token>` | File Stream (`application/octet-stream`) |
 | `POST /v2/thread/{thread_id}/docs/{document_id}/ingest` | Chunk, embed & vector-index PDF document | Path: `thread_id`, `document_id`, Header: `Authorization: Bearer <token>` | `{ "message": "str", "document": { "id": "str", "thread_id": "str", "filename": "str", "status": "str", "total_chunks": 0 } }` |
+| `DELETE /v2/thread/{thread_id}/docs/{doc_id}` | Delete document, storage file & vector embeddings | Path: `thread_id`, `doc_id`, Header: `Authorization: Bearer <token>` | `{ "message": "str", "doc_id": "str" }` |
+
 
 ---
-
-## Legacy V1 API (`/v1`)
-
-| Endpoint | Info | Input Schema | Output Schema |
-| :--- | :--- | :--- | :--- |
-| `POST /v1/auth/register` | V1 Register | `{ "username": "str", "password": "str" }` | `{ "message": "str", "userId": "str" }` |
-| `POST /v1/auth/login` | V1 Login | `{ "username": "str", "password": "str" }` | `{ "message": "str", "userId": "str", "username": "str", "access_token": "str" }` |
-| `POST /v1/auth/refresh` | V1 Refresh Token | Cookie: `refresh_token` | `{ "message": "str", "userId": "str", "username": "str", "access_token": "str" }` |
-| `POST /v1/auth/logout` | V1 Logout | Cookie: `refresh_token` | `{ "message": "str" }` |
-| `GET /v1/auth/me` | V1 Get User | Header: `Authorization: Bearer <token>` | `{ "id": "str", "userId": "str", "username": "str", "is_active": true }` |
-| `POST /v1/chat/free` | V1 Anonymous SSE Stream | Body: `{ "prompt": "str", "history": [...] }` | SSE Stream (`text/event-stream`) |
-| `POST /v1/chat/new_thread` | V1 Create Thread | Header: `Authorization: Bearer <token>` | `{ "thread_id": "str" }` |
-| `POST /v1/chat/base/{thread_id}` | V1 Chat Stream | Path: `thread_id`, Header: `Authorization: Bearer <token>`, Body: `{ "prompt": "str" }` | SSE Stream (`text/event-stream`) |
-| `GET /v1/chat/base/get_messages/{thread_id}` | V1 Get Messages | Path: `thread_id`, Header: `Authorization: Bearer <token>` | `{ "messages": [...] }` |
-| `GET /v1/chat/base/{thread_id}/models` | V1 Get Models | Path: `thread_id`, Header: `Authorization: Bearer <token>` | `{ "current_model": "str", "default_model": "str", "models": ["str"] }` |
-| `PATCH /v1/chat/base/{thread_id}/model` | V1 Update Model | Path: `thread_id`, Body: `{ "model": "str" }` | `{ "thread_id": "str", "model": "str" }` |
-| `GET /v1/chat/base/get_all_thread_titles` | V1 List Threads | Header: `Authorization: Bearer <token>` | `[ { "id": "str", "title": "str" } ]` |
-| `PATCH /v1/chat/base/{thread_id}/title` | V1 Update Title | Path: `thread_id`, Body: `{ "title": "str" }` | `{ "thread_id": "str", "title": "str" }` |
-| `DELETE /v1/chat/base/{thread_id}` | V1 Delete Thread | Path: `thread_id`, Header: `Authorization: Bearer <token>` | `{ "message": "str", "thread_id": "str" }` |
-| `POST /v1/chat/{thread_id}/documents` | V1 Upload Doc | Path: `thread_id`, Form: `file` | `{ "message": "str" }` |
-| `GET /v1/chat/{thread_id}/documents/{document_id}` | V1 Download Doc | Path: `thread_id`, `document_id` | File Stream |
-| `POST /v1/chat/{thread_id}/documents/{document_id}/process` | V1 Ingest Doc | Path: `thread_id`, `document_id` | Document processing status |
