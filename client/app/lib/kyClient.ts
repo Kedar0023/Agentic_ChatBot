@@ -1,11 +1,11 @@
 import ky from "ky";
 import { useAuthStore } from "./ZustandStore";
 
-const API_BASE = "http://localhost:8000/v1";
+const API_BASE = "http://localhost:8000/v2";
 
 // ──────────────────────────────────────────────────────────
 // Raw API instance — NO interceptors.
-// Used exclusively for /auth/refresh so that a 401 from the
+// Used exclusively for /session/refresh so that a 401 from the
 // refresh endpoint itself does NOT trigger another refresh
 // (which would create an infinite loop).
 // ──────────────────────────────────────────────────────────
@@ -30,7 +30,7 @@ async function refreshAccessToken(): Promise<string | null> {
   refreshPromise = (async () => {
     try {
       const res = await rawApi
-        .post("auth/refresh")
+        .post("session/refresh")
         .json<{
           message: string;
           userId: string;
@@ -75,7 +75,7 @@ export const api = ky.create({
 
         // Don't try to refresh auth endpoints to prevent loops
         const url = new URL(response.url);
-        const authPaths = ["auth/login", "auth/register", "auth/refresh", "auth/logout"];
+        const authPaths = ["auth/login", "auth/register", "session/refresh", "auth/logout"];
         if (authPaths.some((p) => url.pathname.includes(p))) {
           return;
         }

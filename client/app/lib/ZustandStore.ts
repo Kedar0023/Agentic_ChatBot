@@ -70,11 +70,7 @@ export const useAuthStore = create<AuthState>()(
       // ─── logout ────────────────────────────────────────
       logout: () => {
         set({ user: null, token: null, status: "guest" });
-
-        fetch("http://localhost:8000/v1/auth/logout", {
-          method: "POST",
-          credentials: "include",
-        }).catch(() => {});
+        api.post("auth/logout").catch(() => {});
       },
 
       // ─── initialize ───────────────────────────────────
@@ -90,7 +86,7 @@ export const useAuthStore = create<AuthState>()(
           }
 
           try {
-            const user = await api.get("auth/me").json<AuthUser>();
+            const user = await api.get("session/me").json<AuthUser>();
             set({ user, status: "authenticated" });
           } catch {
             const { status } = get();
@@ -218,7 +214,7 @@ export const useSidebarStore = create<SidebarUIState>()(
         set({ isLoadingThreads: true });
         try {
           const data = await api
-            .get("chat/base/get_all_thread_titles")
+            .get("thread/list_threads")
             .json<Array<{ id: string; title: string; created_at?: string; updated_at?: string }>>();
 
           const formattedThreads: ChatThread[] = data.map((t) => ({
@@ -237,7 +233,7 @@ export const useSidebarStore = create<SidebarUIState>()(
 
       createThread: async () => {
         try {
-          const res = await api.post("chat/new_thread").json<{ thread_id: string }>();
+          const res = await api.post("thread/create").json<{ thread_id: string }>();
           const newThread: ChatThread = {
             id: res.thread_id,
             title: "New Chat",
@@ -264,7 +260,7 @@ export const useSidebarStore = create<SidebarUIState>()(
         }));
 
         try {
-          await api.patch(`chat/base/${threadId}/title`, { json: { title } }).json();
+          await api.patch(`thread/${threadId}/title`, { json: { title } }).json();
         } catch (error) {
           console.error("Failed to update thread title via API:", error);
           get().fetchThreads();
@@ -278,7 +274,7 @@ export const useSidebarStore = create<SidebarUIState>()(
         }));
 
         try {
-          await api.delete(`chat/base/${threadId}`).json();
+          await api.delete(`thread/${threadId}`).json();
         } catch (error) {
           console.error("Failed to delete thread via API:", error);
           get().fetchThreads();

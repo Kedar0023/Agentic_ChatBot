@@ -10,7 +10,7 @@ export default function PublicLayout() {
   const status = useAuthStore((state) => state.status);
 
   if (status === "authenticated") {
-    return <Navigate to="/home" replace />;
+    return <Navigate to="/chat" replace />;
   }
 
   return <Outlet />;

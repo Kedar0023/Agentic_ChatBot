@@ -22,6 +22,8 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { authSchema, type AuthSchema } from "@/lib/zodSchema";
 import { api } from "@/lib/kyClient";
 import { useAuthStore, type AuthUser } from "@/lib/ZustandStore";
+import logo_dark from "@/assets/Dark_varient.svg";
+import logo_light from "@/assets/light_varient.svg";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -71,7 +73,7 @@ export default function LoginPage() {
         loginAction(userObj, response.access_token);
       }
 
-      navigate("/home");
+      navigate("/chat");
     } catch (err) {
       if (err instanceof HTTPError) {
         try {
@@ -96,7 +98,13 @@ export default function LoginPage() {
         <ThemeToggle />
       </div>
       <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="space-y-1 text-center">
+        <CardHeader className="space-y-2 text-center">
+          <div className="flex justify-center mb-1">
+            <Link to="/" className="inline-flex items-center gap-2.5 transition-opacity hover:opacity-90">
+              <img src={logo_dark} alt="FinSpike AI Logo" className="h-10 w-10 rounded-lg dark:hidden shrink-0" />
+              <img src={logo_light} alt="FinSpike AI Logo" className="h-10 w-10 rounded-lg hidden dark:block shrink-0" />
+            </Link>
+          </div>
           <CardTitle className="text-2xl font-bold tracking-tight">
             Welcome back
           </CardTitle>

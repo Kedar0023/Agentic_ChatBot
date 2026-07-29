@@ -23,65 +23,14 @@ import {
   Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import logo_dark from "@/assets/Dark_varient.svg";
+import logo_light from "@/assets/light_varient.svg";
 import { useAuthStore, useSidebarStore, type ChatThread } from "@/lib/ZustandStore";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/ThemeToggle";
 
 export { useSidebarStore };
 export type { ChatThread };
-
-// ── Mock Chat Titles Data Fallback ──────────────────────────
-export const MOCK_CHAT_THREADS: ChatThread[] = [
-  {
-    id: "thread-101",
-    title: "FastAPI SSE Streaming Architecture",
-    category: "Today",
-    updatedAt: "10 mins ago",
-    isPinned: true,
-  },
-  {
-    id: "thread-102",
-    title: "RAG Pipeline Debugging & Embeddings",
-    category: "Today",
-    updatedAt: "2 hours ago",
-  },
-  {
-    id: "thread-103",
-    title: "React Router v7 Layout & Routes",
-    category: "Yesterday",
-    updatedAt: "Yesterday",
-  },
-  {
-    id: "thread-104",
-    title: "Zustand Auth Store State Hydration",
-    category: "Yesterday",
-    updatedAt: "Yesterday",
-  },
-  {
-    id: "thread-105",
-    title: "Tailwind CSS v4 Utility Theme Setup",
-    category: "Previous 7 Days",
-    updatedAt: "3 days ago",
-  },
-  {
-    id: "thread-106",
-    title: "ChromaDB vs Pinecone Benchmarks",
-    category: "Previous 7 Days",
-    updatedAt: "5 days ago",
-  },
-  {
-    id: "thread-107",
-    title: "JWT Access & Refresh Token Interceptor",
-    category: "Older",
-    updatedAt: "2 weeks ago",
-  },
-  {
-    id: "thread-108",
-    title: "VoyageAI Contextual Chunking Spec",
-    category: "Older",
-    updatedAt: "1 month ago",
-  },
-];
 
 // ── Sub-components (Using Zustand state directly without props) ──
 
@@ -93,19 +42,31 @@ function SidebarHeader() {
   return (
     <div className="flex items-center justify-between h-14 px-3 border-b border-sidebar-border/60">
       <Link
-        to="/home"
+        to="/chat"
         className={cn(
           "flex items-center gap-2.5 font-semibold tracking-tight transition-opacity hover:opacity-90 overflow-hidden",
           isCollapsed && "justify-center w-full px-0"
         )}
-        title="TheChatBot AI"
+        title="FinSpike AI AI"
       >
-        <div className="flex items-center justify-center size-8 rounded-xl bg-primary text-primary-foreground shadow-sm shrink-0">
+        {/* <div className="flex items-center justify-center size-8 rounded-xl bg-primary text-primary-foreground shadow-sm shrink-0">
           <Sparkles className="size-4" />
-        </div>
+        </div> */}
+
+        <img
+          src={logo_dark}
+          alt="FinSpike AI Logo"
+          className="h-8 w-8 rounded-md dark:hidden shrink-0"
+        />
+        <img
+          src={logo_light}
+          alt="FinSpike AI Logo"
+          className="h-8 w-8 rounded-md hidden dark:block shrink-0"
+        />
+        
         {!isCollapsed && (
           <span className="truncate text-base font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-            TheChatBot
+            FinSpike AI
           </span>
         )}
       </Link>
@@ -138,7 +99,10 @@ function SidebarActions() {
   return (
     <div className="p-3 space-y-2">
       <Button
-        onClick={()=>navigate("/home")}
+        onClick={() => {
+          closeMobileSidebar();
+          navigate("/chat");
+        }}
         variant="default"
         className={cn(
           "w-full justify-start gap-2 shadow-xs transition-transform active:scale-[0.98]",
@@ -223,7 +187,7 @@ function SidebarThreadItem({ thread }: { thread: ChatThread }) {
     handleCloseMenu();
     await deleteThread(thread.id);
     if (currentThreadId === thread.id) {
-      navigate("/home");
+      navigate("/chat");
     }
   };
 
@@ -355,7 +319,7 @@ function SidebarThreadList() {
   }, [fetchThreads]);
 
   const currentThreadId = activeThreadId || params.thread_id;
-  const threadsToDisplay = storeThreads.length > 0 ? storeThreads : MOCK_CHAT_THREADS;
+  const threadsToDisplay = storeThreads;
 
   const filteredThreads = useMemo(() => {
     if (!searchQuery.trim()) return threadsToDisplay;
@@ -454,8 +418,8 @@ function SidebarUserMenu() {
   const logout = useAuthStore((state) => state.logout);
   const { theme, setTheme } = useTheme();
 
-  const displayName = user?.username || user?.name || "Kedar User";
-  const displayEmail = user?.email || "kedar@agentic.ai";
+  const displayName = user?.username || user?.name || "test User";
+  const displayEmail = user?.email || "user@agentic.ai";
   const userInitials = displayName
     .split(" ")
     .map((n: string) => n[0])

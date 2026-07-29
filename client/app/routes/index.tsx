@@ -10,6 +10,8 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
+import logo_dark from '@/assets/Dark_varient.svg';
+import logo_light from '@/assets/light_varient.svg';
 
 
 export default function LandingPage() {
@@ -23,11 +25,10 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
         <div className="max-w-6xl mx-auto flex h-14 items-center justify-between px-6">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <Bot className="h-4 w-4" />
-            </div>
+            <img src={logo_dark} alt="FinSpike AI Logo" className="h-8 w-8 rounded-md dark:hidden shrink-0" />
+            <img src={logo_light} alt="FinSpike AI Logo" className="h-8 w-8 rounded-md hidden dark:block shrink-0" />
             <span className="font-semibold text-sm tracking-tight">
-              TheChatBot
+              FinSpike AI
             </span>
             <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-mono text-muted-foreground border border-border">
               RAG v2.4
@@ -237,7 +238,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="py-6 px-6 border-t border-border text-center text-xs text-muted-foreground font-mono">
-        © {new Date().getFullYear()} TheChatBot RAG Platform. Built with TanStack Router & Tailwind CSS.
+        © {new Date().getFullYear()} FinSpike AI RAG Platform. Built with TanStack Router & Tailwind CSS.
       </footer>
     </div>
   );

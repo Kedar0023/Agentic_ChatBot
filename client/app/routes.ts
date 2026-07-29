@@ -3,7 +3,7 @@ import { type RouteConfig, index, route, layout } from "@react-router/dev/routes
 export default [
   index("routes/index.tsx"),
 
-  // Public-only routes (redirect authenticated users to /home)
+  // Public-only routes (redirect authenticated users to /chat)
   layout("routes/public-layout.tsx", [
     route("login", "routes/login.tsx"),
     route("register", "routes/register.tsx"),
@@ -11,7 +11,6 @@ export default [
 
   // Protected routes (redirect guest users to /login)
   layout("routes/protected-layout.tsx", [
-    route("home", "routes/home.tsx"),
-    route("chat/:thread_id", "routes/chat.tsx"),
+    route("chat/:thread_id?", "routes/chat.tsx"),
   ]),
 ] satisfies RouteConfig;
