@@ -4,7 +4,8 @@ from langchain.tools import ToolRuntime, tool
 from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_core.tools import BaseTool
 
-from app.langchain.rag_workflow import RAGWorkflow
+from app.langchain.basic_rag import BasicRAG
+from app.langchain.workflow import RAGWorkflow
 from app.types import Context
 
 
@@ -17,7 +18,33 @@ def retrieve_relevant_chunks(query: str, runtime: ToolRuntime[Context], top_k: i
     thread_id = runtime.context.thread_id
     if not RAGWorkflow.thread_has_documents(thread_id):
         return [{"error": "No documents found for this thread."}]
-    return RAGWorkflow.retrieve_relevant_chunks(query=query, thread_id=thread_id, top_k=top_k)
+
+    rag_strategy = getattr(runtime.context, "rag_strategy", None) or "basic"
+    llm_model = getattr(runtime.context, "llm_model", None)
+    history = getattr(runtime.context, "history", None) or []
+
+    if rag_strategy == "corrective":
+        from app.langchain.corrective_retrieval import CorrectiveRAG
+
+        return CorrectiveRAG.retrieve_relevant_chunks(
+            query=query,
+            thread_id=thread_id,
+            top_k=top_k,
+            llm_model=llm_model,
+        )
+
+    if rag_strategy == "adaptive_gate":
+        from app.langchain.retrieval_gate import RetrievalGateRAG
+
+        return RetrievalGateRAG.retrieve_relevant_chunks(
+            query=query,
+            thread_id=thread_id,
+            top_k=top_k,
+            chat_history=history,
+            llm_model=llm_model,
+        )
+
+    return BasicRAG.retrieve_relevant_chunks(query=query, thread_id=thread_id, top_k=top_k)
 
 
 # ---------------------------------------------------------------------------------

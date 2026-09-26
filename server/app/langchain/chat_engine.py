@@ -43,11 +43,20 @@ class ChatEngine:
         prompt: str,
         thread_id: str | None = None,
         llm_model: str | None = None,
+        rag_strategy: str | None = None,
     ) -> str:
         messages = ChatEngine.compose_chat_messages(history, prompt)
         agent = get_agent(llm_model)
         try:
-            res = await agent.ainvoke({"messages": messages}, context=Context(thread_id=thread_id))
+            res = await agent.ainvoke(
+                {"messages": messages},
+                context=Context(
+                    thread_id=thread_id or "",
+                    rag_strategy=rag_strategy,
+                    llm_model=llm_model,
+                    history=history,
+                ),
+            )
             return res["messages"][-1].content
         except Exception as e:
             logger.error("invoke failed: %s", e, exc_info=True)
@@ -61,6 +70,7 @@ class ChatEngine:
         prompt: str,
         thread_id: str | None = None,
         llm_model: str | None = None,
+        rag_strategy: str | None = None,
     ):
         messages = ChatEngine.compose_chat_messages(history, prompt)
         agent = get_agent(llm_model)
@@ -68,7 +78,12 @@ class ChatEngine:
             async for chunk, metadata in agent.astream(
                 {"messages": messages},
                 stream_mode="messages",
-                context=Context(thread_id=thread_id),
+                context=Context(
+                    thread_id=thread_id or "",
+                    rag_strategy=rag_strategy,
+                    llm_model=llm_model,
+                    history=history,
+                ),
             ):
                 if isinstance(chunk, AIMessageChunk):
                     # Tool invocation request from the LLM

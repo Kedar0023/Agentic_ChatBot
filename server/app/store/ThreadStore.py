@@ -20,15 +20,26 @@ class ThreadStore:
         return db.query(Thread).filter(Thread.id == thread_id, Thread.user_id == user_id).first()
 
     @staticmethod
-    def update_metadata(thread: Thread, title: str | None = None, llm_model: str | None = None) -> None:
+    def update_metadata(
+        thread: Thread,
+        title: str | None = None,
+        llm_model: str | None = None,
+        rag_strategy: str | None = None,
+    ) -> None:
         if thread.title is None and title is not None:
             thread.title = title
         if thread.llm_model is None and llm_model is not None:
             thread.llm_model = llm_model
+        if getattr(thread, "rag_strategy", None) is None and rag_strategy is not None:
+            thread.rag_strategy = rag_strategy
 
     @staticmethod
     def update_model(thread: Thread, llm_model: str) -> None:
         thread.llm_model = llm_model
+
+    @staticmethod
+    def update_rag_strategy(thread: Thread, rag_strategy: str) -> None:
+        thread.rag_strategy = rag_strategy
 
     @staticmethod
     def update_title(thread: Thread, title: str) -> None:

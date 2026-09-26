@@ -14,7 +14,7 @@ from app.core.logging import logger
 from app.core.middleware import authenticate_user
 from app.database.db import get_async_db_session, get_db
 from app.langchain.chat_engine import ChatEngine
-from app.langchain.llm import DEFAULT_MODEL
+from app.langchain.llm import DEFAULT_MODEL, DEFAULT_RAG_STRATEGY
 from app.models.chats import Message, MessageRole, MessageStatus
 from app.store.MessageStore import MessageStore
 from app.store.ThreadStore import ThreadStore
@@ -30,7 +30,9 @@ AppConfig = getAppConfig()
 active_tasks: dict[str, asyncio.Task] = {}
 
 
-async def anonymous_chat_generator(history: list[dict], prompt: str) -> AsyncGenerator[str]:
+async def anonymous_chat_generator(
+    history: list[dict], prompt: str, rag_strategy: str | None = None
+) -> AsyncGenerator[str]:
     if history and len(history) >= CHAT_LIMIT:
         raise ValueError("Free credits limit reached.")
 
@@ -40,7 +42,7 @@ async def anonymous_chat_generator(history: list[dict], prompt: str) -> AsyncGen
             role = "user" if entry["role"] == "human" else "assistant"
             lc_history.append(ChatEngine.to_lc_message(role, entry["content"]))
 
-    async for chunk in ChatEngine.stream(lc_history, prompt):
+    async for chunk in ChatEngine.stream(lc_history, prompt, rag_strategy=rag_strategy):
         yield f"data: {json.dumps(chunk)}\n\n"
 
 
@@ -54,6 +56,7 @@ async def generator(
     async_db_session: async_sessionmaker[AsyncSession],
     thread_id: str,
     llm_model: str | None = None,
+    rag_strategy: str | None = None,
 ) -> AsyncGenerator[str]:
     parts: list[str] = []
     status = MessageStatus.COMPLETE
@@ -63,9 +66,11 @@ async def generator(
         active_tasks[thread_id] = current_task
 
     # Stream the response
-    logger.info("Stream started thread_id=%s model=%s", thread_id, llm_model)
+    logger.info("Stream started thread_id=%s model=%s strategy=%s", thread_id, llm_model, rag_strategy)
     try:
-        async for chunk in ChatEngine.stream(lc_history, prompt, thread_id, llm_model=llm_model):
+        async for chunk in ChatEngine.stream(
+            lc_history, prompt, thread_id, llm_model=llm_model, rag_strategy=rag_strategy
+        ):
             if chunk["type"] == "ai":
                 parts.append(chunk["content"])
             yield f"data: {json.dumps(chunk)}\n\n"
@@ -111,7 +116,7 @@ async def free_chat(req: ChatRequest):
         raise HTTPException(status_code=400, detail="Free credits limit reached.")
 
     return StreamingResponse(
-        anonymous_chat_generator(history, req.prompt),
+        anonymous_chat_generator(history, req.prompt, rag_strategy=req.rag_strategy),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -148,7 +153,12 @@ async def chat_(
     human_msg = MessageStore.create(db, thread_id, MessageRole.USER, req.prompt, MessageStatus.COMPLETE)
 
     # Update thread metadata on first message
-    ThreadStore.update_metadata(thread, title=req.prompt[:100], llm_model=DEFAULT_MODEL)
+    ThreadStore.update_metadata(
+        thread,
+        title=req.prompt[:100],
+        llm_model=DEFAULT_MODEL,
+        rag_strategy=DEFAULT_RAG_STRATEGY,
+    )
 
     try:
         db.commit()
@@ -180,14 +190,23 @@ async def chat_(
             },
         )
 
-    # Resolve which model this thread uses
+    # Resolve which model and rag strategy this thread uses
     curr_model = req.llm_model or thread.llm_model or DEFAULT_MODEL
+    curr_strategy = req.rag_strategy or getattr(thread, "rag_strategy", None) or DEFAULT_RAG_STRATEGY
 
     # Start streaming response
     db.expunge(ai_msg)  # detach — ai_msg must not stay bound to the sync session
 
     return StreamingResponse(
-        generator(req.prompt, lc_history, ai_msg, async_db_session, thread_id, llm_model=curr_model),
+        generator(
+            req.prompt,
+            lc_history,
+            ai_msg,
+            async_db_session,
+            thread_id,
+            llm_model=curr_model,
+            rag_strategy=curr_strategy,
+        ),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

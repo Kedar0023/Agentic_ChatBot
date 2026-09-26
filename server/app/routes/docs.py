@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.logging import logger
 from app.core.middleware import authenticate_user
 from app.database.db import get_db
-from app.langchain.rag_workflow import RAGWorkflow
+from app.langchain.workflow import RAGWorkflow
 from app.models.document import DocumentStatus
 from app.types import TokenPayload
 from app.services.cloudflare_r2 import delete_file, get_downloadable_file, upload_file

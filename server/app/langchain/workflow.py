@@ -22,7 +22,6 @@ def get_embedding_model() -> VoyageAIEmbeddings:
 
 # ------------------------------------------------------------------------------------------
 
-
 # Embedding dimension must match VoyageAI output_dimension above
 _EMBEDDING_DIM = 512
 
@@ -41,7 +40,7 @@ class RAGWorkflow:
         return len(res.get("matches", [])) > 0
 
     # ---------------------------------------------------------------------------------------
-    # this fn loads bytes form r2 + construct a temp file & further workflow
+    # this fn loads bytes from r2 + constructs a temp file & further workflow
     # The temporary file is automatically deleted after loading.
     @staticmethod
     def load_pdf_from_bytes(steam: bytes) -> list[Document]:
@@ -78,36 +77,3 @@ class RAGWorkflow:
         model = get_embedding_model()
         logger.info("Embeddings of query generated")
         return model.embed_query(query)
-
-    # ---------------------------------------------------------------------------------------
-
-    # NOTE : formats the Pinecone query response into a flat list of dicts
-    @staticmethod
-    def format_query_results(res: dict) -> list[dict]:
-        formatted_results = []
-        for match in res.get("matches", []):
-            meta = match.get("metadata", {})
-            formatted_results.append(
-                {
-                    "content": meta.get("document", ""),
-                    "filename": meta.get("filename"),
-                    "page": meta.get("page"),
-                    "score": match.get("score"),
-                }
-            )
-        logger.info("Pinecone query response formatted")
-        return formatted_results
-
-    # ---------------------------------------------------------------------------------------
-
-    @staticmethod
-    def retrieve_relevant_chunks(query: str, thread_id: str, top_k: int = 5) -> list[dict]:
-        query_embedding = RAGWorkflow.embed_query(query)
-
-        vecStore = get_vector_store()
-
-        res = vecStore.similarity_search(embedding=query_embedding, top_k=top_k, where={"thread_id": thread_id})
-        formatted_res = RAGWorkflow.format_query_results(res)
-        return formatted_res
-
-    # ---------------------------------------------------------------------------------------

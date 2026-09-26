@@ -8,11 +8,18 @@ from app.core.app_configs import getAppConfig
 from app.core.logging import logger
 from app.core.middleware import authenticate_user
 from app.database.db import get_db
-from app.langchain.llm import AVAILABLE_MODELS, DEFAULT_MODEL, list_models
+from app.langchain.llm import (
+    AVAILABLE_MODELS,
+    AVAILABLE_RAG_STRATEGIES,
+    DEFAULT_MODEL,
+    DEFAULT_RAG_STRATEGY,
+    list_models,
+    list_rag_strategies,
+)
 from app.store.MessageStore import MessageStore
 from app.store.ThreadStore import ThreadStore
 from app.store.UserStore import UserStore
-from app.types import TokenPayload, UpdateModelRequest, UpdateTitleRequest
+from app.types import TokenPayload, UpdateModelRequest, UpdateRagStrategyRequest, UpdateTitleRequest
 
 router = APIRouter(prefix="/v2/thread", tags=["thread"])
 AppConfig = getAppConfig()
@@ -139,6 +146,80 @@ async def update_thread_model(
     return {
         "thread_id": str(thread.id),
         "model": thread.llm_model,
+    }
+
+
+# --------------------------------------------------------------------------------
+
+
+@router.get("/{thread_id}/strategies", status_code=200)
+@router.get("/{thread_id}/rag_strategies", status_code=200)
+async def get_thread_strategies(
+    thread_id: str,
+    access_token: Annotated[TokenPayload, Depends(authenticate_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    try:
+        user_id = int(access_token.sub)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="Invalid user ID in token payload.")
+
+    thread = ThreadStore.get_for_user(db, thread_id, user_id)
+    if not thread:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    return {
+        "current_strategy": getattr(thread, "rag_strategy", None) or DEFAULT_RAG_STRATEGY,
+        "default_strategy": DEFAULT_RAG_STRATEGY,
+        "strategies": list_rag_strategies(),
+    }
+
+
+# --------------------------------------------------------------------------------
+
+
+@router.patch("/{thread_id}/strategy", status_code=200)
+@router.patch("/{thread_id}/rag_strategy", status_code=200)
+async def update_thread_strategy(
+    thread_id: str,
+    req: UpdateRagStrategyRequest,
+    access_token: Annotated[TokenPayload, Depends(authenticate_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    if req.strategy not in AVAILABLE_RAG_STRATEGIES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown strategy '{req.strategy}'. Available options: {list(AVAILABLE_RAG_STRATEGIES.keys())}",
+        )
+
+    try:
+        user_id = int(access_token.sub)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="Invalid user ID in token payload.")
+
+    thread = ThreadStore.get_for_user(db, thread_id, user_id)
+    if not thread:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    ThreadStore.update_rag_strategy(thread, req.strategy)
+    try:
+        db.commit()
+        db.refresh(thread)
+    except Exception as e:
+        db.rollback()
+        logger.error("Strategy update failed thread_id=%s", thread_id, exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "message": "Failed to update strategy.",
+                "error": str(e.__cause__ or e),
+            },
+        )
+
+    logger.info("Strategy updated thread_id=%s strategy=%s", thread_id, req.strategy)
+    return {
+        "thread_id": str(thread.id),
+        "strategy": thread.rag_strategy,
     }
 
 

@@ -22,6 +22,7 @@ import {
   X,
   Download,
   FolderOpen,
+  SlidersHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,6 +52,18 @@ export interface ModelSelectionResponse {
   current_model: string;
   default_model: string;
   models: (string | ModelItem)[];
+}
+
+export interface RagStrategyItem {
+  id: string;
+  display_name: string;
+  description: string;
+}
+
+export interface RagStrategyResponse {
+  current_strategy: string;
+  default_strategy: string;
+  strategies: RagStrategyItem[];
 }
 
 export interface DocumentItem {
@@ -88,6 +101,11 @@ export default function ChatPage() {
   const [currentModel, setCurrentModel] = useState<string>("");
   const [availableModels, setAvailableModels] = useState<(string | ModelItem)[]>([]);
   const [isUpdatingModel, setIsUpdatingModel] = useState(false);
+
+  // RAG strategy selection state
+  const [currentStrategy, setCurrentStrategy] = useState<string>("basic");
+  const [availableStrategies, setAvailableStrategies] = useState<RagStrategyItem[]>([]);
+  const [isUpdatingStrategy, setIsUpdatingStrategy] = useState(false);
 
   // Documents state
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
@@ -193,7 +211,21 @@ export default function ChatPage() {
         console.warn("Could not fetch models for thread:", err);
       }
 
-      // 3. Fetch thread document list: GET /v2/thread/{thread_id}/docs
+      // 3. Fetch thread RAG strategy selection: GET /v2/thread/{thread_id}/strategies
+      try {
+        const stratRes = await api
+          .get(`thread/${thread_id}/strategies`)
+          .json<RagStrategyResponse>();
+
+        if (isMounted) {
+          setCurrentStrategy(stratRes.current_strategy || stratRes.default_strategy || "basic");
+          setAvailableStrategies(stratRes.strategies || []);
+        }
+      } catch (err) {
+        console.warn("Could not fetch RAG strategies for thread:", err);
+      }
+
+      // 4. Fetch thread document list: GET /v2/thread/{thread_id}/docs
       fetchDocuments();
     }
 
@@ -220,6 +252,25 @@ export default function ChatPage() {
       setErrorMsg("Failed to change LLM model.");
     } finally {
       setIsUpdatingModel(false);
+    }
+  };
+
+  // Handle RAG Strategy selection change: PATCH /v2/thread/{thread_id}/strategy
+  const handleStrategyChange = async (newStrategy: string) => {
+    if (!thread_id || newStrategy === currentStrategy) return;
+
+    setIsUpdatingStrategy(true);
+    try {
+      await api.patch(`thread/${thread_id}/strategy`, {
+        json: { strategy: newStrategy },
+      }).json();
+
+      setCurrentStrategy(newStrategy);
+    } catch (err: any) {
+      console.error("Failed to update thread RAG strategy:", err);
+      setErrorMsg("Failed to change RAG strategy.");
+    } finally {
+      setIsUpdatingStrategy(false);
     }
   };
 
@@ -398,6 +449,7 @@ export default function ChatPage() {
         json: {
           prompt: promptText,
           llm_model: currentModel || undefined,
+          rag_strategy: currentStrategy || undefined,
         },
       });
 
@@ -610,6 +662,60 @@ export default function ChatPage() {
                         </DropdownMenuItem>
                       );
                     })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              );
+            })()}
+
+            {/* RAG Strategy Selector Dropdown */}
+            {availableStrategies.length > 0 && (() => {
+              const currentStratObj = availableStrategies.find(
+                (s) => s.id === currentStrategy
+              );
+              const currentDisplayName =
+                currentStratObj?.display_name || currentStrategy || "RAG Strategy";
+
+              return (
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    disabled={isUpdatingStrategy}
+                    className="h-8 text-xs font-mono gap-1.5 px-2.5 rounded-lg border border-border bg-muted/30 hover:bg-accent flex items-center justify-between text-foreground disabled:opacity-50"
+                    title="Select RAG Strategy"
+                  >
+                    <SlidersHorizontal className="size-3.5 text-primary" />
+                    <span className="truncate max-w-24 md:max-w-36">
+                      {currentDisplayName}
+                    </span>
+                    {isUpdatingStrategy ? (
+                      <Loader2 className="size-3 animate-spin" />
+                    ) : (
+                      <span className="text-muted-foreground text-[10px]">▼</span>
+                    )}
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-64">
+                    <div className="px-2 py-1.5 text-[11px] font-semibold text-muted-foreground flex items-center gap-1.5">
+                      <SlidersHorizontal className="size-3 text-primary" />
+                      <span>RAG Strategies</span>
+                    </div>
+                    {availableStrategies.map((s) => (
+                      <DropdownMenuItem
+                        key={s.id}
+                        onClick={() => handleStrategyChange(s.id)}
+                        className="text-xs flex flex-col items-start justify-between cursor-pointer py-1.5"
+                      >
+                        <div className="flex items-center justify-between w-full font-medium font-mono">
+                          <span>{s.display_name}</span>
+                          {s.id === currentStrategy && (
+                            <Check className="size-3.5 text-primary ml-2 shrink-0" />
+                          )}
+                        </div>
+                        {s.description && (
+                          <span className="text-[10px] text-muted-foreground font-sans line-clamp-2 font-normal mt-0.5">
+                            {s.description}
+                          </span>
+                        )}
+                      </DropdownMenuItem>
+                    ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
               );

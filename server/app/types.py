@@ -53,7 +53,7 @@ class UserResponse(BaseModel):
 
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -67,10 +67,15 @@ class ChatRequest(BaseModel):
     history: list[MessageEntry] | None = None
     prompt: str
     llm_model: str | None = None
+    rag_strategy: str | None = None
 
 
 class UpdateModelRequest(BaseModel):
     model: str
+
+
+class UpdateRagStrategyRequest(BaseModel):
+    strategy: str
 
 
 class UpdateTitleRequest(BaseModel):
@@ -80,3 +85,6 @@ class UpdateTitleRequest(BaseModel):
 @dataclass
 class Context:
     thread_id: str
+    rag_strategy: str | None = None
+    llm_model: str | None = None
+    history: list[Any] | None = None

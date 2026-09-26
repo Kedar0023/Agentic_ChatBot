@@ -36,6 +36,8 @@ class Thread(Base):
 
     llm_model: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
+    rag_strategy: Mapped[str | None] = mapped_column(String(50), nullable=True, default="basic")
+
     documents: Mapped[list["Document"]] = relationship(
         back_populates="thread",
         cascade="all, delete-orphan",

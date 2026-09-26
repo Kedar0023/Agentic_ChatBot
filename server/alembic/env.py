@@ -24,6 +24,7 @@ target_metadata = Base.metadata
 from app.core.app_configs import getAppConfig  # noqa
 from app.models.user import *  # noqa
 from app.models.chats import *  # noqa
+from app.models.document import *  # noqa
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -44,9 +45,10 @@ def run_migrations_offline() -> None:
 
     """
     app_config = getAppConfig()
-    url = config.get_main_option("sqlalchemy.url", default=app_config.database_url)
+    db_url = app_config.database_url.get_secret_value()
+    url = config.get_main_option("sqlalchemy.url", default=db_url)
 
-    config.set_main_option("sqlalchemy.url", app_config.database_url)
+    config.set_main_option("sqlalchemy.url", db_url)
 
     context.configure(
         url=url,
@@ -67,7 +69,8 @@ def run_migrations_online() -> None:
 
     """
     app_config = getAppConfig()
-    config.set_main_option("sqlalchemy.url", app_config.database_url)
+    db_url = app_config.database_url.get_secret_value()
+    config.set_main_option("sqlalchemy.url", db_url)
 
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
