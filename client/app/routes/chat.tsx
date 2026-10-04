@@ -29,6 +29,8 @@ import {
   Coins,
   BarChart3,
   BrainCircuit,
+  Clock3,
+  DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -1123,18 +1125,9 @@ export default function ChatPage() {
                       {!isUser && msg.metrics && (
                         <div className="pt-1.5 border-t border-border/40 flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground">
                           {msg.metrics.latency_ms !== undefined && (
-                            <span title="Total request latency">
-                              ⏱️ {msg.metrics.latency_ms}ms
-                            </span>
-                          )}
-                          {(msg.metrics.input_tokens !== undefined || msg.metrics.output_tokens !== undefined) && (
-                            <span title="Input / Output tokens">
-                              🔤 {msg.metrics.input_tokens?.toLocaleString() ?? 0} in / {msg.metrics.output_tokens?.toLocaleString() ?? 0} out
-                            </span>
-                          )}
-                          {msg.metrics.cost_usd !== undefined && msg.metrics.cost_usd > 0 && (
-                            <span title="Estimated token cost">
-                              💰 ${msg.metrics.cost_usd.toFixed(4)}
+                            <span title="Total request latency" className="inline-flex items-center gap-1">
+                              <Clock3 className="size-3.5" />
+                              {msg.metrics.latency_ms}ms
                             </span>
                           )}
                         </div>
@@ -1144,10 +1137,7 @@ export default function ChatPage() {
                       {!isUser && msg.content && (
                         <div className="flex items-center justify-end pt-1 gap-2 border-t border-border/40 text-[11px] text-muted-foreground">
                           <button
-                            onClick={() => {
-                              setSelectedInsightMessageId(msg.id);
-                              void fetchResponseInsight(msg);
-                            }}
+                            onClick={() => setSelectedInsightMessageId(msg.id)}
                             className="inline-flex items-center gap-1 hover:text-foreground transition-colors py-0.5 px-1.5 rounded hover:bg-muted/50"
                             title="Know more about this response"
                           >
@@ -1350,7 +1340,7 @@ export default function ChatPage() {
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="rounded-xl border border-border bg-card p-3">
                       <div className="mb-1 flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                        <Coins className="size-3.5 text-amber-500" />
+                        <DollarSign className="size-3.5 text-amber-500" />
                         Cost
                       </div>
                       <div className="text-sm font-semibold text-foreground">
@@ -1363,7 +1353,7 @@ export default function ChatPage() {
                     </div>
                     <div className="rounded-xl border border-border bg-card p-3">
                       <div className="mb-1 flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                        <BarChart3 className="size-3.5 text-primary" />
+                        <Clock3 className="size-3.5 text-primary" />
                         Latency
                       </div>
                       <div className="text-sm font-semibold text-foreground">
