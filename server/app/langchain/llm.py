@@ -1,6 +1,7 @@
 from langchain.agents import create_agent
 from langchain.chat_models import init_chat_model
 
+from app.core.app_configs import getAppConfig
 from app.core.logging import logger
 from app.langchain.tools import get_tools
 from app.types import Context
@@ -21,9 +22,18 @@ AVAILABLE_MODELS: dict[str, dict] = {
         "display_name": "Qwen 2.5 1.5B",
         "description": "Ultra-light model for simple tasks.",
     },
+    #     model="gemini-2.5-flash",  # ← correct format
+#     model_provider="google_genai",
+    "gemini-2.5-flash":{
+        "model": "gemini-2.5-flash",
+        "model_provider": "google_genai",
+        "temperature": 0.0,
+        "display_name": "Gemini 2.5 Flash",
+        "description": "Fast, lightweight model for quick responses.",
+    }
 }
 
-DEFAULT_MODEL = "qwen3:4b"
+DEFAULT_MODEL = "gemini-2.5-flash"
 
 AVAILABLE_RAG_STRATEGIES: dict[str, dict] = {
     "basic": {
@@ -61,10 +71,18 @@ def get_llm(llm_model: str | None = None):
 
     if selected_llm not in llm_cache:
         model_data = AVAILABLE_MODELS[selected_llm]
+
+        # google_genai needs the API key explicitly – pydantic-settings loads
+        # .env into AppConfigs but NOT into os.environ, so the SDK can't find it.
+        extra_kwargs: dict = {}
+        if model_data["model_provider"] == "google_genai":
+            extra_kwargs["api_key"] = getAppConfig().google_api_key.get_secret_value()
+
         llm = init_chat_model(
             model=model_data["model"],
             model_provider=model_data["model_provider"],
             temperature=model_data.get("temperature", 0.0),
+            **extra_kwargs,
         )
         llm_cache[selected_llm] = llm
 

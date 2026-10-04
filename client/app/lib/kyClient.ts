@@ -12,7 +12,6 @@ const API_BASE = "http://localhost:8000/v2";
 const rawApi = ky.create({
   prefix: API_BASE,
   credentials: "include",
-  headers: { "Content-Type": "application/json" },
 });
 
 // ──────────────────────────────────────────────────────────
@@ -59,7 +58,6 @@ async function refreshAccessToken(): Promise<string | null> {
 export const api = ky.create({
   prefix: API_BASE,
   credentials: "include",
-  headers: { "Content-Type": "application/json" },
   hooks: {
     beforeRequest: [
       ({ request }) => {

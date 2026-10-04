@@ -1,4 +1,5 @@
 import uuid
+from uuid import UUID
 
 from sqlalchemy.orm import Session
 
@@ -57,14 +58,15 @@ class DocStore:
     # therad_id filename , s3_key ,content_type , file_size_bytes ,status
     def create(
         db: Session,
-        thread_id: str,
-        filename: str,
-        s3_key: str,
-        content_type: str,
-        file_size_bytes: int,
-        status: DocumentStatus,
-    ) -> None:
-        document = Document(
+        id: UUID | None = None,
+        thread_id: str = "",
+        filename: str = "",
+        s3_key: str = "",
+        content_type: str = "",
+        file_size_bytes: int = 0,
+        status: DocumentStatus = DocumentStatus.PENDING,
+    ) -> Document:
+        kwargs = dict(
             thread_id=thread_id,
             filename=filename,
             s3_key=s3_key,
@@ -72,6 +74,9 @@ class DocStore:
             file_size_bytes=file_size_bytes,
             status=status,
         )
+        if id is not None:
+            kwargs["id"] = id
+        document = Document(**kwargs)
         db.add(document)
         return document
 

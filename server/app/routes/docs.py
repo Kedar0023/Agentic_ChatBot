@@ -90,6 +90,7 @@ async def upload_document(
 
     document = DocStore.create(
         db,
+        id=doc_id,
         thread_id=thread.id,
         filename=file.filename,
         s3_key=s3_key,
@@ -113,6 +114,8 @@ async def upload_document(
     logger.info("Document uploaded doc_id=%s file=%s user_id=%s", doc_id, file.filename, user_id)
     return {
         "message": "Document uploaded successfully.",
+        "document_id": str(document.id),
+        "filename": document.filename,
     }
 
 

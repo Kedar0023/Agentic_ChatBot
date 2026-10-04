@@ -30,6 +30,7 @@ class AppConfigs(BaseSettings):
     pinecone_index: SecretStr
 
     voyageai_api_key: SecretStr
+    google_api_key: SecretStr
 
     model_config = SettingsConfigDict(env_file=str(ENV_FILE))
 
