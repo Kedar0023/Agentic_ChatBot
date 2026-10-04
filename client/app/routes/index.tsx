@@ -30,7 +30,7 @@ export default function LandingPage() {
             <span className="font-semibold text-sm tracking-tight">
               FinSpike AI
             </span>
-            <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-mono text-muted-foreground border border-border">
+            <span className="rounded-md bg-secondary px-2 py-0.5 text-xs text-muted-foreground border border-border">
               RAG v2.4
             </span>
           </div>
@@ -59,7 +59,7 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="py-20 md:py-28 px-6 max-w-6xl mx-auto text-center border-b border-border">
-        <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/50 px-3 py-1 text-xs font-mono text-muted-foreground mb-6">
+        <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/50 px-3 py-1 text-xs text-muted-foreground mb-6">
           <Sparkles className="h-3.5 w-3.5 text-primary" />
           <span>Production-Ready RAG Platform</span>
         </div>
@@ -117,11 +117,11 @@ export default function LandingPage() {
                   <div className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-muted">
                     <Icon className="h-4 w-4 text-foreground" />
                   </div>
-                  <span className="text-xs font-mono text-muted-foreground">0{index + 1}</span>
+                  <span className="text-xs text-muted-foreground">0{index + 1}</span>
                 </div>
                 
                 <h3 className="font-semibold text-sm mb-1">{node.title}</h3>
-                <div className="inline-block rounded bg-secondary px-2 py-0.5 text-[11px] font-mono text-secondary-foreground border border-border mb-3">
+                <div className="inline-block rounded bg-secondary px-2 py-0.5 text-[11px] text-secondary-foreground border border-border mb-3">
                   {node.tech}
                 </div>
                 <p className="text-xs text-muted-foreground leading-normal">{node.desc}</p>
@@ -131,7 +131,7 @@ export default function LandingPage() {
         </div>
 
         {activeArchNode && (
-          <div className="mt-4 rounded-lg border border-border bg-muted/40 p-4 font-mono text-xs text-muted-foreground">
+          <div className="mt-4 rounded-lg border border-border bg-muted/40 p-4 text-xs text-muted-foreground">
             <div className="flex items-center justify-between border-b border-border pb-2 mb-2 text-foreground font-semibold">
               <span className="flex items-center gap-2">
                 <Network className="h-3.5 w-3.5" /> Pipeline Trace Log
@@ -175,8 +175,8 @@ export default function LandingPage() {
                   <p className="text-xs text-muted-foreground leading-normal mb-6">{feat.desc}</p>
                 </div>
                 <div className="pt-3 border-t border-border">
-                  <div className="text-xl font-bold text-foreground font-mono">{feat.metric}</div>
-                  <div className="text-[10px] uppercase font-mono tracking-wider text-muted-foreground mt-0.5">
+                  <div className="text-xl font-bold text-foreground">{feat.metric}</div>
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">
                     {feat.metricLabel}
                   </div>
                 </div>
@@ -198,7 +198,7 @@ export default function LandingPage() {
             {techBadges.map((badge) => (
               <span
                 key={badge}
-                className="rounded-md border border-border bg-secondary px-2.5 py-1 text-xs font-mono text-secondary-foreground"
+                className="rounded-md border border-border bg-secondary px-2.5 py-1 text-xs text-secondary-foreground"
               >
                 {badge}
               </span>
@@ -237,7 +237,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-6 px-6 border-t border-border text-center text-xs text-muted-foreground font-mono">
+      <footer className="py-6 px-6 border-t border-border text-center text-xs text-muted-foreground">
         © {new Date().getFullYear()} FinSpike AI RAG Platform. Built with TanStack Router & Tailwind CSS.
       </footer>
     </div>

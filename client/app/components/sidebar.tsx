@@ -479,7 +479,7 @@ function SidebarUserMenu() {
                 )}
                 <span>Appearance</span>
               </div>
-              <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 bg-muted rounded text-muted-foreground">
+              <span className="text-[10px] uppercase px-1.5 py-0.5 bg-muted rounded text-muted-foreground">
                 {theme}
               </span>
             </button>

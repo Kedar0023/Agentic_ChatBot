@@ -23,6 +23,12 @@ import {
   Download,
   FolderOpen,
   SlidersHorizontal,
+  Info,
+  Gauge,
+  ShieldCheck,
+  Coins,
+  BarChart3,
+  BrainCircuit,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -77,6 +83,48 @@ export interface RagStrategyResponse {
   strategies: RagStrategyItem[];
 }
 
+const DEFAULT_MODEL = "gemini-2.5-flash";
+const DEFAULT_STRATEGY = "basic";
+
+const DEFAULT_MODEL_OPTIONS: ModelItem[] = [
+  {
+    model: "qwen3:4b",
+    display_name: "Qwen 3 4B",
+    description: "Fast, lightweight model for quick responses.",
+    provider: "ollama",
+  },
+  {
+    model: "qwen2.5:1.5b",
+    display_name: "Qwen 2.5 1.5B",
+    description: "Ultra-light model for simple tasks.",
+    provider: "ollama",
+  },
+  {
+    model: "gemini-2.5-flash",
+    display_name: "Gemini 2.5 Flash",
+    description: "Fast, lightweight model for quick responses.",
+    provider: "google_genai",
+  },
+];
+
+const DEFAULT_STRATEGY_OPTIONS: RagStrategyItem[] = [
+  {
+    id: "basic",
+    display_name: "Basic RAG",
+    description: "Standard vector similarity search (top-k chunks from Pinecone).",
+  },
+  {
+    id: "corrective",
+    display_name: "Corrective RAG (CRAG)",
+    description: "Evaluates retrieved chunks for relevance and falls back to web search if relevance is low.",
+  },
+  {
+    id: "adaptive_gate",
+    display_name: "Adaptive Retrieval Gate",
+    description: "Uses an LLM gate to dynamically decide whether and how much context to retrieve based on the query.",
+  },
+];
+
 export interface DocumentItem {
   id: string;
   thread_id: string;
@@ -109,14 +157,18 @@ export default function ChatPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Model selection state
-  const [currentModel, setCurrentModel] = useState<string>("");
-  const [availableModels, setAvailableModels] = useState<(string | ModelItem)[]>([]);
+  const [currentModel, setCurrentModel] = useState<string>(DEFAULT_MODEL);
+  const [availableModels, setAvailableModels] = useState<(string | ModelItem)[]>(DEFAULT_MODEL_OPTIONS);
   const [isUpdatingModel, setIsUpdatingModel] = useState(false);
 
   // RAG strategy selection state
-  const [currentStrategy, setCurrentStrategy] = useState<string>("basic");
-  const [availableStrategies, setAvailableStrategies] = useState<RagStrategyItem[]>([]);
+  const [currentStrategy, setCurrentStrategy] = useState<string>(DEFAULT_STRATEGY);
+  const [availableStrategies, setAvailableStrategies] = useState<RagStrategyItem[]>(DEFAULT_STRATEGY_OPTIONS);
   const [isUpdatingStrategy, setIsUpdatingStrategy] = useState(false);
+
+  const [selectedInsightMessageId, setSelectedInsightMessageId] = useState<string | null>(null);
+  const [insightCache, setInsightCache] = useState<Record<string, any>>({});
+  const [isFetchingInsight, setIsFetchingInsight] = useState(false);
 
   // Documents state
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
@@ -169,6 +221,10 @@ export default function ChatPage() {
       setActiveThreadId(null);
       setMessages([]);
       setDocuments([]);
+      setCurrentModel(DEFAULT_MODEL);
+      setAvailableModels(DEFAULT_MODEL_OPTIONS);
+      setCurrentStrategy(DEFAULT_STRATEGY);
+      setAvailableStrategies(DEFAULT_STRATEGY_OPTIONS);
       setIsLoadingHistory(false);
       return;
     }
@@ -247,17 +303,50 @@ export default function ChatPage() {
     };
   }, [thread_id, setActiveThreadId]);
 
+  const fetchResponseInsight = async (message: MessageItem) => {
+    if (!message.content.trim()) return;
+
+    const promptForMessage =
+      [...messages]
+        .reverse()
+        .find((msg) => msg.role === "user" && msg.content.trim())?.content || "";
+
+    setSelectedInsightMessageId(message.id);
+    setIsFetchingInsight(true);
+
+    try {
+      const result = await api
+        .post("evaluation", {
+          json: {
+            answer: message.content,
+            sources: message.metrics?.sources ?? [],
+            query: promptForMessage,
+            llm_model: currentModel || DEFAULT_MODEL,
+          },
+        })
+        .json<any>();
+
+      setInsightCache((prev) => ({ ...prev, [message.id]: result }));
+    } catch (err) {
+      console.error("Failed to fetch response insight:", err);
+      setErrorMsg("Failed to fetch quality and faithfulness metrics for this response.");
+    } finally {
+      setIsFetchingInsight(false);
+    }
+  };
+
   // Handle LLM Model selection change: PATCH /v2/thread/{thread_id}/model
   const handleModelChange = async (newModel: string) => {
-    if (!thread_id || newModel === currentModel) return;
+    if (newModel === currentModel) return;
+    setCurrentModel(newModel);
+
+    if (!thread_id) return;
 
     setIsUpdatingModel(true);
     try {
       await api.patch(`thread/${thread_id}/model`, {
         json: { model: newModel },
       }).json();
-
-      setCurrentModel(newModel);
     } catch (err: any) {
       console.error("Failed to update thread model:", err);
       setErrorMsg("Failed to change LLM model.");
@@ -268,15 +357,16 @@ export default function ChatPage() {
 
   // Handle RAG Strategy selection change: PATCH /v2/thread/{thread_id}/strategy
   const handleStrategyChange = async (newStrategy: string) => {
-    if (!thread_id || newStrategy === currentStrategy) return;
+    if (newStrategy === currentStrategy) return;
+    setCurrentStrategy(newStrategy);
+
+    if (!thread_id) return;
 
     setIsUpdatingStrategy(true);
     try {
       await api.patch(`thread/${thread_id}/strategy`, {
         json: { strategy: newStrategy },
       }).json();
-
-      setCurrentStrategy(newStrategy);
     } catch (err: any) {
       console.error("Failed to update thread RAG strategy:", err);
       setErrorMsg("Failed to change RAG strategy.");
@@ -605,6 +695,13 @@ export default function ChatPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
   };
 
+  const selectedInsightMessage = selectedInsightMessageId
+    ? messages.find((msg) => msg.id === selectedInsightMessageId) ?? null
+    : null;
+  const selectedInsightData = selectedInsightMessage
+    ? insightCache[selectedInsightMessage.id]
+    : null;
+
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden">
       <Sidebar />
@@ -632,7 +729,7 @@ export default function ChatPage() {
               <FolderOpen className="size-3.5 text-primary" />
               <span className="hidden sm:inline">Docs</span>
               {documents.length > 0 && (
-                <span className="ml-0.5 px-1.5 py-0.2 rounded-full bg-primary/20 text-primary font-mono text-[10px] font-bold">
+                <span className="ml-0.5 px-1.5 py-0.2 rounded-full bg-primary/20 text-primary text-[10px] font-bold">
                   {documents.length}
                 </span>
               )}
@@ -652,7 +749,7 @@ export default function ChatPage() {
                 <DropdownMenu>
                   <DropdownMenuTrigger
                     disabled={isUpdatingModel}
-                    className="h-8 text-xs font-mono gap-1.5 px-2.5 rounded-lg border border-border bg-muted/30 hover:bg-accent flex items-center justify-between text-foreground disabled:opacity-50"
+                    className="h-8 text-xs gap-1.5 px-2.5 rounded-lg border border-border bg-muted/30 hover:bg-accent flex items-center justify-between text-foreground disabled:opacity-50"
                   >
                     <Cpu className="size-3.5 text-primary" />
                     <span className="truncate max-w-27.5 md:max-w-37.5">
@@ -679,7 +776,7 @@ export default function ChatPage() {
                           onClick={() => handleModelChange(modelSlug)}
                           className="text-xs flex flex-col items-start justify-between cursor-pointer py-1.5"
                         >
-                          <div className="flex items-center justify-between w-full font-medium font-mono">
+                          <div className="flex items-center justify-between w-full font-medium">
                             <span>{modelLabel}</span>
                             {modelSlug === currentModel && (
                               <Check className="size-3.5 text-primary ml-2 shrink-0" />
@@ -710,7 +807,7 @@ export default function ChatPage() {
                 <DropdownMenu>
                   <DropdownMenuTrigger
                     disabled={isUpdatingStrategy}
-                    className="h-8 text-xs font-mono gap-1.5 px-2.5 rounded-lg border border-border bg-muted/30 hover:bg-accent flex items-center justify-between text-foreground disabled:opacity-50"
+                    className="h-8 text-xs gap-1.5 px-2.5 rounded-lg border border-border bg-muted/30 hover:bg-accent flex items-center justify-between text-foreground disabled:opacity-50"
                     title="Select RAG Strategy"
                   >
                     <SlidersHorizontal className="size-3.5 text-primary" />
@@ -734,7 +831,7 @@ export default function ChatPage() {
                         onClick={() => handleStrategyChange(s.id)}
                         className="text-xs flex flex-col items-start justify-between cursor-pointer py-1.5"
                       >
-                        <div className="flex items-center justify-between w-full font-medium font-mono">
+                        <div className="flex items-center justify-between w-full font-medium">
                           <span>{s.display_name}</span>
                           {s.id === currentStrategy && (
                             <Check className="size-3.5 text-primary ml-2 shrink-0" />
@@ -814,13 +911,13 @@ export default function ChatPage() {
                           <p className="text-xs font-semibold text-foreground truncate" title={doc.filename}>
                             {doc.filename}
                           </p>
-                          <p className="text-[10px] text-muted-foreground font-mono mt-0.5">
+                          <p className="text-[10px] text-muted-foreground mt-0.5">
                             {formatFileSize(doc.file_size_bytes)} • {doc.content_type.split("/")[1] || "file"}
                           </p>
                         </div>
                         {/* Status Badge */}
                         <span
-                          className={`text-[9px] font-mono font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${
+                          className={`text-[9px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${
                             isCompleted
                               ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
                               : isProcessing
@@ -995,7 +1092,7 @@ export default function ChatPage() {
                           </div>
                         )}
                         {isCancelled && (
-                          <span className="inline-block mt-2 text-xs italic text-amber-500 font-mono">
+                          <span className="inline-block mt-2 text-xs italic text-amber-500">
                             [Generation stopped by user]
                           </span>
                         )}
@@ -1008,7 +1105,7 @@ export default function ChatPage() {
                             <FileText className="size-3 text-primary" />
                             <span>Sources</span>
                           </div>
-                          <ul className="space-y-0.5 font-mono text-[10px] pl-1">
+                          <ul className="space-y-0.5 text-[10px] pl-1">
                             {msg.metrics.sources.map((s, idx) => (
                               <li key={idx} className="flex items-center gap-1 text-foreground/70">
                                 <span>•</span>
@@ -1024,7 +1121,7 @@ export default function ChatPage() {
 
                       {/* Metrics Display */}
                       {!isUser && msg.metrics && (
-                        <div className="pt-1.5 border-t border-border/40 flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground font-mono">
+                        <div className="pt-1.5 border-t border-border/40 flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground">
                           {msg.metrics.latency_ms !== undefined && (
                             <span title="Total request latency">
                               ⏱️ {msg.metrics.latency_ms}ms
@@ -1043,9 +1140,20 @@ export default function ChatPage() {
                         </div>
                       )}
 
-                      {/* Copy Action for AI Messages */}
+                      {/* Actions for AI Messages */}
                       {!isUser && msg.content && (
                         <div className="flex items-center justify-end pt-1 gap-2 border-t border-border/40 text-[11px] text-muted-foreground">
+                          <button
+                            onClick={() => {
+                              setSelectedInsightMessageId(msg.id);
+                              void fetchResponseInsight(msg);
+                            }}
+                            className="inline-flex items-center gap-1 hover:text-foreground transition-colors py-0.5 px-1.5 rounded hover:bg-muted/50"
+                            title="Know more about this response"
+                          >
+                            <Info className="size-3" />
+                            <span>Know more about response</span>
+                          </button>
                           <button
                             onClick={() => handleCopyContent(msg.id, msg.content)}
                             className="inline-flex items-center gap-1 hover:text-foreground transition-colors py-0.5 px-1.5 rounded hover:bg-muted/50"
@@ -1085,7 +1193,7 @@ export default function ChatPage() {
               <button
                 key={doc.id}
                 onClick={() => handleShowDoc(doc)}
-                className="text-[11px] font-mono px-2 py-0.5 bg-accent/70 hover:bg-accent border border-border rounded-md text-foreground shrink-0 flex items-center gap-1.5 transition-colors"
+                className="text-[11px] px-2 py-0.5 bg-accent/70 hover:bg-accent border border-border rounded-md text-foreground shrink-0 flex items-center gap-1.5 transition-colors"
                 title={`Click to view/download ${doc.filename}`}
               >
                 <span>{doc.filename}</span>
@@ -1167,6 +1275,190 @@ export default function ChatPage() {
             )}
           </form>
         </div>
+
+        <aside
+          className={`fixed inset-y-0 right-0 z-40 w-full max-w-md border-l border-border bg-background/95 shadow-2xl backdrop-blur-xl transition-transform duration-200 ease-out ${
+            selectedInsightMessage ? "translate-x-0" : "translate-x-full"
+          }`}
+          aria-label="Response insights sidebar"
+        >
+          {selectedInsightMessage && (
+            <div className="flex h-full flex-col">
+              <div className="flex items-center justify-between border-b border-border px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <BrainCircuit className="size-4 text-primary" />
+                  <span className="text-sm font-semibold">Response insights</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedInsightMessageId(null)}
+                  className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  aria-label="Close response insights"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+
+              <div className="flex-1 space-y-4 overflow-y-auto p-4">
+                <div className="rounded-xl border border-border bg-muted/20 p-3">
+                  <div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                    <Info className="size-3.5 text-primary" />
+                    Response summary
+                  </div>
+                  <p className="line-clamp-4 text-sm leading-relaxed text-foreground">
+                    {selectedInsightMessage.content || "No response content available yet."}
+                  </p>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void fetchResponseInsight(selectedInsightMessage)}
+                  disabled={isFetchingInsight}
+                  className="w-full justify-center gap-2"
+                >
+                  {isFetchingInsight ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Gauge className="size-4" />
+                  )}
+                  Fetch quality & faithfulness
+                </Button>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between rounded-xl border border-border bg-card p-3">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <Gauge className="size-4 text-primary" />
+                      Quality
+                    </div>
+                    <span className="text-sm font-semibold text-foreground">
+                      {selectedInsightData?.quality !== undefined ? `${Number(selectedInsightData.quality).toFixed(2)}/1.00` : "—"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-xl border border-border bg-card p-3">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <ShieldCheck className="size-4 text-emerald-500" />
+                      Faithfulness
+                    </div>
+                    <span className="text-sm font-semibold text-foreground">
+                      {selectedInsightData?.faithfulness !== undefined ? `${Number(selectedInsightData.faithfulness).toFixed(2)}/1.00` : "—"}
+                    </span>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-xl border border-border bg-card p-3">
+                      <div className="mb-1 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                        <Coins className="size-3.5 text-amber-500" />
+                        Cost
+                      </div>
+                      <div className="text-sm font-semibold text-foreground">
+                        {selectedInsightMessage.metrics?.cost_usd !== undefined
+                          ? `$${Number(selectedInsightMessage.metrics.cost_usd).toFixed(4)}`
+                          : selectedInsightData?.cost_usd !== undefined
+                            ? `$${Number(selectedInsightData.cost_usd).toFixed(4)}`
+                            : "—"}
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-border bg-card p-3">
+                      <div className="mb-1 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                        <BarChart3 className="size-3.5 text-primary" />
+                        Latency
+                      </div>
+                      <div className="text-sm font-semibold text-foreground">
+                        {selectedInsightMessage.metrics?.latency_ms !== undefined
+                          ? `${selectedInsightMessage.metrics.latency_ms}ms`
+                          : "—"}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-xl border border-border bg-card p-3">
+                      <div className="mb-1 text-xs font-medium text-muted-foreground">Input tokens</div>
+                      <div className="text-sm font-semibold text-foreground">
+                        {selectedInsightMessage.metrics?.input_tokens !== undefined
+                          ? selectedInsightMessage.metrics.input_tokens.toLocaleString()
+                          : "—"}
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-border bg-card p-3">
+                      <div className="mb-1 text-xs font-medium text-muted-foreground">Output tokens</div>
+                      <div className="text-sm font-semibold text-foreground">
+                        {selectedInsightMessage.metrics?.output_tokens !== undefined
+                          ? selectedInsightMessage.metrics.output_tokens.toLocaleString()
+                          : "—"}
+                      </div>
+                    </div>
+                  </div>
+
+                  {(selectedInsightData?.quality_reason || selectedInsightData?.faithfulness_reason || selectedInsightData?.short_reason) && (
+                    <div className="rounded-xl border border-border bg-card p-3 text-sm text-foreground/90">
+                      {selectedInsightData.quality_reason && (
+                        <p className="mb-2">
+                          <span className="font-medium">Quality:</span> {selectedInsightData.quality_reason}
+                        </p>
+                      )}
+                      {selectedInsightData.faithfulness_reason && (
+                        <p className="mb-2">
+                          <span className="font-medium">Faithfulness:</span> {selectedInsightData.faithfulness_reason}
+                        </p>
+                      )}
+                      {selectedInsightData.short_reason && (
+                        <p>
+                          <span className="font-medium">Summary:</span> {selectedInsightData.short_reason}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {(selectedInsightMessage.metrics?.llm_model || currentModel || currentStrategy) && (
+                    <div className="rounded-xl border border-border bg-card p-3 space-y-2 text-sm text-foreground/90">
+                      {selectedInsightMessage.metrics?.llm_model && (
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-muted-foreground">Model</span>
+                          <span className="font-medium">{selectedInsightMessage.metrics.llm_model}</span>
+                        </div>
+                      )}
+                      {(currentStrategy || selectedInsightMessage.metrics?.rag_strategy) && (
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-muted-foreground">Strategy</span>
+                          <span className="font-medium">{selectedInsightMessage.metrics?.rag_strategy ?? currentStrategy}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {selectedInsightMessage.metrics?.sources && selectedInsightMessage.metrics.sources.length > 0 && (
+                    <div className="rounded-xl border border-border bg-card p-3">
+                      <div className="mb-2 flex items-center gap-2 text-sm font-medium">
+                        <FileText className="size-4 text-primary" />
+                        Sources
+                      </div>
+                      <ul className="space-y-2 text-sm text-foreground/80">
+                        {selectedInsightMessage.metrics.sources.map((source, idx) => (
+                          <li key={`${source.filename ?? "source"}-${idx}`} className="flex items-start gap-2">
+                            <span className="mt-1 text-primary">•</span>
+                            <span>
+                              {source.filename || "Untitled source"}
+                              {source.page !== undefined && source.page !== null && (
+                                <span className="text-muted-foreground"> · page {source.page}</span>
+                              )}
+                              {source.score !== undefined && source.score !== null && (
+                                <span className="text-muted-foreground"> · score {Number(source.score).toFixed(2)}</span>
+                              )}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </aside>
       </div>
     </div>
   );
