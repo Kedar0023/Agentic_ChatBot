@@ -1,3 +1,5 @@
+from typing import Any
+
 from langchain_core.messages import (
     AIMessage,
     AIMessageChunk,
@@ -71,9 +73,16 @@ class ChatEngine:
         thread_id: str | None = None,
         llm_model: str | None = None,
         rag_strategy: str | None = None,
+        metrics_collector: Any | None = None,
     ):
+        import json
+
         messages = ChatEngine.compose_chat_messages(history, prompt)
         agent = get_agent(llm_model)
+        total_input_tokens = 0
+        total_output_tokens = 0
+        accumulated_text: list[str] = []
+
         try:
             async for chunk, metadata in agent.astream(
                 {"messages": messages},
@@ -86,6 +95,11 @@ class ChatEngine:
                 ),
             ):
                 if isinstance(chunk, AIMessageChunk):
+                    # Track usage_metadata from provider if provided
+                    if hasattr(chunk, "usage_metadata") and chunk.usage_metadata:
+                        total_input_tokens += chunk.usage_metadata.get("input_tokens", 0)
+                        total_output_tokens += chunk.usage_metadata.get("output_tokens", 0)
+
                     # Tool invocation request from the LLM
                     if chunk.tool_calls:
                         for tc in chunk.tool_calls:
@@ -96,12 +110,29 @@ class ChatEngine:
                             }
                     # Streamed text content
                     elif chunk.content:
+                        accumulated_text.append(str(chunk.content))
                         yield {
                             "type": "ai",
                             "content": chunk.content,
                         }
 
                 elif isinstance(chunk, ToolMessage):
+                    # Extract sources from retrieval tool output if collector provided
+                    if metrics_collector and chunk.name == "retrieve_relevant_chunks":
+                        try:
+                            raw = chunk.content
+                            data = json.loads(raw) if isinstance(raw, str) else raw
+                            if isinstance(data, list):
+                                for item in data:
+                                    if isinstance(item, dict) and item.get("filename"):
+                                        metrics_collector.add_source(
+                                            filename=item.get("filename"),
+                                            page=item.get("page"),
+                                            score=item.get("score"),
+                                        )
+                        except Exception:
+                            pass
+
                     yield {
                         "type": "tool",
                         "tool": chunk.name,
@@ -110,3 +141,13 @@ class ChatEngine:
         except Exception as e:
             logger.error("stream failed: %s", e, exc_info=True)
             raise RuntimeError("An error occurred while streaming the response.") from e
+        finally:
+            if metrics_collector is not None:
+                if total_input_tokens > 0 or total_output_tokens > 0:
+                    metrics_collector.record_tokens(total_input_tokens, total_output_tokens)
+                # Fallback to count_tokens_approximately if provider didn't return usage
+                metrics_collector.estimate_tokens_from_messages(
+                    input_messages=messages,
+                    output_text="".join(accumulated_text),
+                )
+                metrics_collector.stop()

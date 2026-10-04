@@ -8,6 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.db import Base
 from app.models.document import Document
+from app.models.metrics import MessageMetrics
 
 
 # --------------------------------------------------------------------------------
@@ -97,4 +98,11 @@ class Message(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(UTC),
+    )
+
+    metrics: Mapped["MessageMetrics | None"] = relationship(
+        "MessageMetrics",
+        back_populates="message",
+        uselist=False,
+        cascade="all, delete-orphan",
     )

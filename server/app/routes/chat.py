@@ -1,7 +1,7 @@
 import asyncio
 import json
 from collections.abc import AsyncGenerator
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
@@ -33,6 +33,8 @@ active_tasks: dict[str, asyncio.Task] = {}
 async def anonymous_chat_generator(
     history: list[dict], prompt: str, rag_strategy: str | None = None
 ) -> AsyncGenerator[str]:
+    from app.langchain.metrics import MetricsCollector
+
     if history and len(history) >= CHAT_LIMIT:
         raise ValueError("Free credits limit reached.")
 
@@ -42,8 +44,27 @@ async def anonymous_chat_generator(
             role = "user" if entry["role"] == "human" else "assistant"
             lc_history.append(ChatEngine.to_lc_message(role, entry["content"]))
 
-    async for chunk in ChatEngine.stream(lc_history, prompt, rag_strategy=rag_strategy):
+    collector = MetricsCollector(rag_strategy=rag_strategy)
+    async for chunk in ChatEngine.stream(lc_history, prompt, rag_strategy=rag_strategy, metrics_collector=collector):
         yield f"data: {json.dumps(chunk)}\n\n"
+
+    yield f"data: {json.dumps({'type': 'metrics', **collector.to_dict()})}\n\n"
+
+
+def _extract_text(content: Any) -> str:
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        extracted = []
+        for item in content:
+            if isinstance(item, str):
+                extracted.append(item)
+            elif isinstance(item, dict) and "text" in item:
+                extracted.append(str(item["text"]))
+            else:
+                extracted.append(str(item))
+        return "".join(extracted)
+    return str(content) if content is not None else ""
 
 
 # ---------------------------------------------------------------------------
@@ -58,8 +79,12 @@ async def generator(
     llm_model: str | None = None,
     rag_strategy: str | None = None,
 ) -> AsyncGenerator[str]:
+    from app.langchain.metrics import MetricsCollector
+    from app.models.metrics import MessageMetrics
+
     parts: list[str] = []
     status = MessageStatus.COMPLETE
+    collector = MetricsCollector(llm_model=llm_model, rag_strategy=rag_strategy)
 
     current_task = asyncio.current_task()
     if current_task and thread_id:
@@ -69,11 +94,15 @@ async def generator(
     logger.info("Stream started thread_id=%s model=%s strategy=%s", thread_id, llm_model, rag_strategy)
     try:
         async for chunk in ChatEngine.stream(
-            lc_history, prompt, thread_id, llm_model=llm_model, rag_strategy=rag_strategy
+            lc_history, prompt, thread_id, llm_model=llm_model, rag_strategy=rag_strategy,
+            metrics_collector=collector,
         ):
             if chunk["type"] == "ai":
-                parts.append(chunk["content"])
+                parts.append(_extract_text(chunk.get("content", "")))
             yield f"data: {json.dumps(chunk)}\n\n"
+
+        # Send metrics as final SSE event after stream completes
+        yield f"data: {json.dumps({'type': 'metrics', **collector.to_dict()})}\n\n"
 
     except asyncio.CancelledError:
         status = MessageStatus.CANCELLED
@@ -88,7 +117,7 @@ async def generator(
         if current_task and active_tasks.get(thread_id) == current_task:
             active_tasks.pop(thread_id, None)
 
-        full_response = "".join(parts)
+        full_response = "".join(_extract_text(p) for p in parts)
 
         async with async_db_session() as db:
             try:
@@ -99,6 +128,19 @@ async def generator(
                     status,
                     content=full_response,
                 )
+
+                # Save metrics to DB
+                metrics_record = MessageMetrics(
+                    message_id=ai_msg.id,
+                    latency_ms=collector.latency_ms,
+                    cost_usd=collector.cost_usd,
+                    input_tokens=collector.input_tokens,
+                    output_tokens=collector.output_tokens,
+                    llm_model=collector.llm_model,
+                    rag_strategy=collector.rag_strategy,
+                )
+                db.add(metrics_record)
+
                 await db.commit()
             except Exception:
                 await db.rollback()

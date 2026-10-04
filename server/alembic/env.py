@@ -25,6 +25,7 @@ from app.core.app_configs import getAppConfig  # noqa
 from app.models.user import *  # noqa
 from app.models.chats import *  # noqa
 from app.models.document import *  # noqa
+from app.models.metrics import *  # noqa
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

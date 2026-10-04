@@ -32,6 +32,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+export interface MessageMetricItem {
+  latency_ms?: number;
+  cost_usd?: number;
+  input_tokens?: number;
+  output_tokens?: number;
+  sources?: Array<{ filename?: string; page?: number | string; score?: number }>;
+  llm_model?: string;
+  rag_strategy?: string;
+}
+
 export interface MessageItem {
   id: string;
   thread_id?: string;
@@ -39,6 +49,7 @@ export interface MessageItem {
   content: string;
   status?: "complete" | "streaming" | "failed" | "cancelled" | string;
   created_at?: string;
+  metrics?: MessageMetricItem;
 }
 
 export interface ModelItem {
@@ -485,6 +496,26 @@ export default function ChatPage() {
             } else if (parsed && typeof parsed === "object") {
               if (parsed.type === "ai" && parsed.content) {
                 chunkText = parsed.content;
+              } else if (parsed.type === "metrics") {
+                setMessages((prevMsgs) =>
+                  prevMsgs.map((msg) => {
+                    if (msg.id === assistantMessageId) {
+                      return {
+                        ...msg,
+                        metrics: {
+                          latency_ms: parsed.latency_ms ?? parsed.metrics?.latency_ms,
+                          cost_usd: parsed.cost_usd ?? parsed.metrics?.cost_usd,
+                          input_tokens: parsed.input_tokens ?? parsed.metrics?.input_tokens,
+                          output_tokens: parsed.output_tokens ?? parsed.metrics?.output_tokens,
+                          sources: parsed.sources ?? [],
+                          llm_model: parsed.llm_model,
+                          rag_strategy: parsed.rag_strategy,
+                        },
+                      };
+                    }
+                    return msg;
+                  })
+                );
               } else if (parsed.content) {
                 chunkText = parsed.content;
               }
@@ -969,6 +1000,48 @@ export default function ChatPage() {
                           </span>
                         )}
                       </div>
+
+                      {/* Sources Display */}
+                      {!isUser && msg.metrics?.sources && msg.metrics.sources.length > 0 && (
+                        <div className="pt-2 border-t border-border/40 text-xs text-muted-foreground space-y-1">
+                          <div className="font-semibold text-foreground/80 flex items-center gap-1.5 text-[11px]">
+                            <FileText className="size-3 text-primary" />
+                            <span>Sources</span>
+                          </div>
+                          <ul className="space-y-0.5 font-mono text-[10px] pl-1">
+                            {msg.metrics.sources.map((s, idx) => (
+                              <li key={idx} className="flex items-center gap-1 text-foreground/70">
+                                <span>•</span>
+                                <span>{s.filename}</span>
+                                {s.page !== undefined && s.page !== null && (
+                                  <span>— page {s.page}</span>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Metrics Display */}
+                      {!isUser && msg.metrics && (
+                        <div className="pt-1.5 border-t border-border/40 flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground font-mono">
+                          {msg.metrics.latency_ms !== undefined && (
+                            <span title="Total request latency">
+                              ⏱️ {msg.metrics.latency_ms}ms
+                            </span>
+                          )}
+                          {(msg.metrics.input_tokens !== undefined || msg.metrics.output_tokens !== undefined) && (
+                            <span title="Input / Output tokens">
+                              🔤 {msg.metrics.input_tokens?.toLocaleString() ?? 0} in / {msg.metrics.output_tokens?.toLocaleString() ?? 0} out
+                            </span>
+                          )}
+                          {msg.metrics.cost_usd !== undefined && msg.metrics.cost_usd > 0 && (
+                            <span title="Estimated token cost">
+                              💰 ${msg.metrics.cost_usd.toFixed(4)}
+                            </span>
+                          )}
+                        </div>
+                      )}
 
                       {/* Copy Action for AI Messages */}
                       {!isUser && msg.content && (

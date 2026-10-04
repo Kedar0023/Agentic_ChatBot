@@ -10,6 +10,7 @@ from app.core.logging import logger
 from app.routes.auth import router as auth_router
 from app.routes.chat import router as chat_router
 from app.routes.docs import router as document_router
+from app.routes.evaluation import router as evaluation_router
 from app.routes.session import router as session_router
 from app.routes.thread import router as thread_router
 
@@ -36,5 +37,6 @@ app.include_router(session_router)
 app.include_router(thread_router)
 app.include_router(chat_router)
 app.include_router(document_router)
+app.include_router(evaluation_router)
 
 logger.info("App started env=%s", config.app_env)

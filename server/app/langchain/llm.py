@@ -14,6 +14,8 @@ AVAILABLE_MODELS: dict[str, dict] = {
         "temperature": 0.0,
         "display_name": "Qwen 3 4B",
         "description": "Fast, lightweight model for quick responses.",
+        "token_cost_per_1k_input": 0.0,
+        "token_cost_per_1k_output": 0.0,
     },
     "qwen2.5:1.5b": {
         "model": "qwen2.5:1.5b",
@@ -21,16 +23,18 @@ AVAILABLE_MODELS: dict[str, dict] = {
         "temperature": 0.0,
         "display_name": "Qwen 2.5 1.5B",
         "description": "Ultra-light model for simple tasks.",
+        "token_cost_per_1k_input": 0.0,
+        "token_cost_per_1k_output": 0.0,
     },
-    #     model="gemini-2.5-flash",  # ← correct format
-#     model_provider="google_genai",
-    "gemini-2.5-flash":{
+    "gemini-2.5-flash": {
         "model": "gemini-2.5-flash",
         "model_provider": "google_genai",
         "temperature": 0.0,
         "display_name": "Gemini 2.5 Flash",
         "description": "Fast, lightweight model for quick responses.",
-    }
+        "token_cost_per_1k_input": 0.00015,
+        "token_cost_per_1k_output": 0.0006,
+    },
 }
 
 DEFAULT_MODEL = "gemini-2.5-flash"
